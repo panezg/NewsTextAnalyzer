@@ -11,8 +11,8 @@ public class App {
   public static void main(String[] args) throws IOException {
     System.out.println("Start: " + new Date());
     IRAnalysis ira = new IRAnalysis();
-    //okok
-    //okok
+    //okokok
+    //okokok
     // ira.buildIndex();
     // ira.deduplicateWordNetWords();
     // ira.explore();
