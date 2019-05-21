@@ -63,23 +63,23 @@ public class Pipeline implements IPipeline {
               List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) (pipelineStep
                   .execute(carrySentence, newsArticle));
               numTriple += triplesWrapper.size();
-              carryExtras.add(triplesWrapper);
-              /*
-               * for (ChunkedBinaryExtraction triple : triples) { System.out.println( "Arg1="
-               * + triple.getArgument1() + "; Rel=" + triple.getRelation() + "; Arg2=" +
-               * triple.getArgument2()); // double conf = confFunc.getConf(extr); //
-               * System.out.println("Arg1=" + extr.getArgument1()); // System.out.println( //
-               * System.out.println( // System.out.println("Conf=" + conf);
-               * 
-               * }
-               */
+              if (triplesWrapper.size() != 0) {
+                carryExtras.add(triplesWrapper);
+              }
             }
             break;
           case VALIDATOR:
-            if (carrySentence != null) {
+            if (carrySentence != null && carryExtras.size() > 0) {
               @SuppressWarnings("unchecked")
               List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) (pipelineStep.execute(carrySentence, carryExtras.get(0)));
               numValidatedTriple += triplesWrapper.size();
+              carryExtras.set(0, triplesWrapper);
+            }
+            break;
+          case LINKER:
+            if (carrySentence != null && carryExtras.size() > 0) {
+              @SuppressWarnings("unchecked")
+              List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) (pipelineStep.execute(carrySentence, carryExtras.get(0)));
               carryExtras.set(0, triplesWrapper);
             }
             break;

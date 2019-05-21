@@ -188,7 +188,7 @@ public class App {
     // new NLPAnalysis().findInterestingSentences(rrre, new String[] {"2018"});
 
     new NLPAnalysis().findInterestingSentences(
-        new Pipeline(new IPipelineStep[] { new SimpleClassifier(), new ReVerbWrapper(), new EntityValidator(), new VirtuosoPersistor() }), new String[] { "2018" });
+        new Pipeline(new IPipelineStep[] { new SimpleClassifier(), new ReVerbWrapper(), new EntityValidator(), new SimpleLinker(), new VirtuosoPersistor() }), new String[] { "2018" });
     // rre.run(text3);
 //    rre.run(text4);
     // srre.run(text5);

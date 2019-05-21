@@ -14,6 +14,7 @@ public class TripleWrapper {
    */
 
   private ChunkedBinaryExtraction triple;
+  private boolean objectMatched;
   private NewsArticle newsArticle;
   private double score;
   private String extractedDate;
@@ -21,6 +22,7 @@ public class TripleWrapper {
 
   public TripleWrapper(ChunkedBinaryExtraction triple, NewsArticle newsArticle, double score) {
     this.triple = triple;
+    this.objectMatched = false;
     this.newsArticle = newsArticle;
     this.score = score;
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -74,5 +76,13 @@ public class TripleWrapper {
   
   public void setExtractedLocation(String extractedLocation) {
     this.extractedLocation = extractedLocation;    
+  }
+  
+  public void setObjectMatched(boolean objectMatched) {
+    this.objectMatched = objectMatched;
+  }
+  
+  public boolean isObjectMatched() {
+    return objectMatched;
   }
 }

@@ -36,7 +36,7 @@ public class VirtuosoPersistor implements IPipelineStep {
   }
 
   @Override
-  public Object execute(String text, Object... extra) {
+  public Object execute(String sentence, Object... extra) {
     @SuppressWarnings("unchecked")
     List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) extra[0];
 
@@ -59,13 +59,12 @@ public class VirtuosoPersistor implements IPipelineStep {
 
       // "INSERT INTO GRAPH <http://test1> { <aa> <bb> 'cc' . <aa1> <bb1> 123. }";
 
-      String subject = toCamelCase(triple.getArgument1().toString().replace("’", "").replace("|", ""), true);
       StringBuilder sbTemp = new StringBuilder();
       sbTemp.append(URI);
-      sbTemp.append(subject);
-      subject = sbTemp.toString();
+      sbTemp.append(toCamelCaseURIReady(triple.getArgument1().toString(), true));
+      String fqSubject = sbTemp.toString();
 
-      String predicateRoot = toCamelCase(triple.getRelation().toString().replace("’", "").replace("|", ""), false);
+      String predicateRoot = toCamelCaseURIReady(triple.getRelation().toString(), false);
       int count = 0;
       if (predicateRoots.containsKey(predicateRoot)) {
         count = predicateRoots.get(predicateRoot);
@@ -80,36 +79,54 @@ public class VirtuosoPersistor implements IPipelineStep {
       sbTemp.append(predicateRoot);
       sbTemp.append("#");
       sbTemp.append(count);
-      String predicate = sbTemp.toString();
+      String fqPredicate = sbTemp.toString();
 
+      String object = "";
+      if (tripleWrapper.isObjectMatched()) {
+        sbTemp = new StringBuilder();
+        sbTemp.append(URI);
+        sbTemp.append(toCamelCaseURIReady(triple.getArgument2().toString(), true));
+        object = sbTemp.toString();
+      }
+      else {
+        object = triple.getArgument2().toString();
+      }
+      
       StringBuilder sb = new StringBuilder();
       sb.append("INSERT INTO GRAPH <http://test1> { ");
       sb.append("<");
-      sb.append(subject);
+      sb.append(fqSubject);
       sb.append("> <");
-      sb.append(predicate);
+      sb.append(fqPredicate);
       sb.append("> \"");
-      sb.append(triple.getArgument2().toString().replace("’", ""));
+      sb.append(object.replace("’", ""));
       sb.append("\" . <");
-      sb.append(predicate);
+      sb.append(fqPredicate);
       sb.append("> <");
       sb.append(URI);
       sb.append("singletonPropertyOf> <");
       sb.append(URI);
       sb.append(predicateRoot);
       sb.append("> . <");
-      sb.append(predicate);
+      sb.append(fqPredicate);
       sb.append("> <");
       sb.append(URI);
       sb.append("hasSource> \"");
       sb.append(tripleWrapper.getSource());
       sb.append("\" . <");
-      sb.append(predicate);
+      sb.append(fqPredicate);
       sb.append("> <");
       sb.append(URI);
       sb.append("date> \"");
       sb.append(tripleWrapper.getDate());
-      sb.append("\" . }");
+
+      sb.append("\" . <");
+      sb.append(fqPredicate);
+      sb.append("> <");
+      sb.append(URI);
+      sb.append("score> ");
+      sb.append(tripleWrapper.getScore());
+      sb.append(" . }");
       // System.out.println(sb.toString());
       VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(sb.toString(), set);
       vur.exec();
@@ -117,8 +134,8 @@ public class VirtuosoPersistor implements IPipelineStep {
     return null;
   }
 
-  public String toCamelCase(String s, boolean upper) {
-    String s2 = s.replace(' ', '_');
+  public String toCamelCaseURIReady(String s, boolean upper) {
+    String s2 = s.replace("’", "").replace("|", "").replace(' ', '_');
     return upper ? CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, s2)
         : CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, s2);
   }
