@@ -7,7 +7,6 @@ import java.util.Properties;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
-import edu.washington.cs.knowitall.nlp.extraction.ChunkedBinaryExtraction;
 
 public class Pipeline implements IPipeline {
   private IPipelineStep[] pipelineSteps;
@@ -30,7 +29,7 @@ public class Pipeline implements IPipeline {
     if (!active) {
       return;
     }
-    String docText = newsArticle.getTitle() + ".\n" + newsArticle.getBody().toString(); 
+    String docText = newsArticle.getTitle() + ".\n" + newsArticle.getBody().toString();
     CoreDocument document = new CoreDocument(docText);
     scNLPPipeline.annotate(document);
 
@@ -39,13 +38,18 @@ public class Pipeline implements IPipeline {
       if (numSentenceSeen % 10000 == 0) {
         System.out.println("numSentenceSeen: " + numSentenceSeen);
       }
-      if (numSentenceSeen == 10000) {
+      
+      /*
+      if (numSentenceSeen < 10000) {
+        continue;
+      }
+      if (numSentenceSeen == 20000) {
         for (IPipelineStep pipelineStep : pipelineSteps) {
           pipelineStep.clean();
         }
         this.active = false;
       }
-
+      */
       String carrySentence = null;
       List<Object> carryExtras = new ArrayList<>();
       for (IPipelineStep pipelineStep : pipelineSteps) {
@@ -60,8 +64,8 @@ public class Pipeline implements IPipeline {
           case EXTRACTOR:
             if (carrySentence != null) {
               @SuppressWarnings("unchecked")
-              List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) (pipelineStep
-                  .execute(carrySentence, newsArticle));
+              List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) (pipelineStep.execute(carrySentence,
+                  newsArticle));
               numTriple += triplesWrapper.size();
               if (triplesWrapper.size() != 0) {
                 carryExtras.add(triplesWrapper);
@@ -71,7 +75,8 @@ public class Pipeline implements IPipeline {
           case VALIDATOR:
             if (carrySentence != null && carryExtras.size() > 0) {
               @SuppressWarnings("unchecked")
-              List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) (pipelineStep.execute(carrySentence, carryExtras.get(0)));
+              List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) (pipelineStep.execute(carrySentence,
+                  carryExtras.get(0)));
               numValidatedTriple += triplesWrapper.size();
               carryExtras.set(0, triplesWrapper);
             }
@@ -79,7 +84,8 @@ public class Pipeline implements IPipeline {
           case LINKER:
             if (carrySentence != null && carryExtras.size() > 0) {
               @SuppressWarnings("unchecked")
-              List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) (pipelineStep.execute(carrySentence, carryExtras.get(0)));
+              List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) (pipelineStep.execute(carrySentence,
+                  carryExtras.get(0)));
               carryExtras.set(0, triplesWrapper);
             }
             break;

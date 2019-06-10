@@ -17,6 +17,7 @@ public class TripleWrapper {
   private boolean objectMatched;
   private NewsArticle newsArticle;
   private double score;
+  private Date referenceDate;
   private String extractedDate;
   private String extractedLocation;
 
@@ -25,16 +26,6 @@ public class TripleWrapper {
     this.objectMatched = false;
     this.newsArticle = newsArticle;
     this.score = score;
-    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-    Date date;
-    try {
-      date = dateFormat.parse(newsArticle.getTime());
-    } catch (ParseException e) {
-      e.printStackTrace();
-      throw new  RuntimeException();
-    }
-    DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-    this.extractedDate = formatter.format(date);
     this.extractedLocation = null;
   }
 
@@ -46,18 +37,17 @@ public class TripleWrapper {
     return String.valueOf(score);
   }
   
-  public String getDate() {
-    if (extractedDate == null) {
-      return newsArticle.getTime();
-    } else {
-      return extractedDate;
-    }
+  public String getExtractedDate() {
+    return extractedDate;
+    
+    //DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+    //this.extractedDate = formatter.format(date);
   }
 
   public String getSource() {
     StringBuilder sb = new StringBuilder();
-    sb.append(newsArticle.getNewsPublication());
-    sb.append("; ");
+    // sb.append(newsArticle.getNewsPublication());
+    // sb.append("; ");
     sb.append(newsArticle.getURL());
     return sb.toString();
   }
@@ -66,23 +56,23 @@ public class TripleWrapper {
     return extractedLocation;
   }
 
-  public String toString() {
-    return "";
-  }
-  
   public void setExtractedDate(String extractedDate) {
     this.extractedDate = extractedDate;
   }
-  
+
   public void setExtractedLocation(String extractedLocation) {
-    this.extractedLocation = extractedLocation;    
+    this.extractedLocation = extractedLocation;
   }
-  
+
   public void setObjectMatched(boolean objectMatched) {
     this.objectMatched = objectMatched;
   }
-  
+
   public boolean isObjectMatched() {
     return objectMatched;
+  }
+  
+  public NewsArticle getNewsArticle() {
+    return newsArticle;
   }
 }

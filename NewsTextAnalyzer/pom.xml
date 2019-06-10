@@ -25,6 +25,17 @@
 	</repositories>
 
 	<dependencies>
+	  <dependency> 
+      <groupId>com.joestelmach</groupId>
+      <artifactId>natty</artifactId>
+      <version>0.13</version>
+    </dependency>
+	  <dependency>
+	    <groupId>org.twitter4j</groupId>
+      <artifactId>twitter4j-core</artifactId>
+      <version>4.0.7</version>
+    </dependency>
+       
 		<dependency>
 			<groupId>com.openlink.virtuoso</groupId>
 			<artifactId>virt_jena3</artifactId>

@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.newstextanalyzer.test.BasicPipeline;
+
 public class NLPAnalysis {
   protected void analyze(List<String> words) {
     try {
@@ -62,6 +64,7 @@ public class NLPAnalysis {
     }
   }
   
+  // NOTE: Current method
   protected void findInterestingSentences(IPipeline pipeline, String[] years) {
     try {
       File dir = new File(App.TGN_DIRECTORY_PATH);
@@ -88,7 +91,6 @@ public class NLPAnalysis {
         }
         System.out.println(pipeline.toString());
       }
-      
     } catch (IOException e) {
       e.printStackTrace();
     } catch (Exception e) {

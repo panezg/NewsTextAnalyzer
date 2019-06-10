@@ -1,4 +1,4 @@
-package org.newstextanalyzer;
+package org.newstextanalyzer.test;
 
 import java.util.ArrayList;
 import java.util.Collection;

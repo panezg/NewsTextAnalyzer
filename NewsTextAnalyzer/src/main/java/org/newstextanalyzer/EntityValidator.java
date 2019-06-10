@@ -1,11 +1,13 @@
 package org.newstextanalyzer;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
-import java.util.regex.Pattern;
+
+import com.joestelmach.natty.DateGroup;
+import com.joestelmach.natty.Parser;
 
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.tokensregex.MultiPatternMatcher;
@@ -13,13 +15,17 @@ import edu.stanford.nlp.ling.tokensregex.SequenceMatchResult;
 import edu.stanford.nlp.ling.tokensregex.TokenSequencePattern;
 import edu.stanford.nlp.simple.Sentence;
 import edu.stanford.nlp.util.CoreMap;
-import edu.washington.cs.knowitall.nlp.extraction.ChunkedBinaryExtraction;
 
 public class EntityValidator implements IPipelineStep {
-  private static final String TEMP_ANALYSIS = "/Users/gpanez/Documents/news/temp/analysis.txt";
-  private MultiPatternMatcher multiMatcher;
+  // private static final String TEMP_ANALYSIS =
+  // "/Users/gpanez/Documents/news/temp/analysis.txt";
+  private MultiPatternMatcher<CoreMap> multiMatcher;
+
+  private SimpleDateFormat dateTimeComplexFormatter;
+  private SimpleDateFormat dateSimpleFormatter;
+  private Parser parser; 
   
-  private PrintWriter pw;
+  // private PrintWriter pw;
 
   /*
    * for (int i = 0; i < patternStrings.length; i++) { patterns[i] =
@@ -27,18 +33,20 @@ public class EntityValidator implements IPipelineStep {
    * 
    */
   public EntityValidator() {
+    
     List<TokenSequencePattern> tokenSequencePatterns = new ArrayList<>();
     tokenSequencePatterns.add(TokenSequencePattern.compile("([ner: TIME])+ [ner: DATE]"));
     tokenSequencePatterns.add(TokenSequencePattern.compile("([ner: DATE] [ner: TIME])"));
     tokenSequencePatterns.add(TokenSequencePattern.compile("([ner: DATE]){2,}"));
     multiMatcher = TokenSequencePattern.getMultiPatternMatcher(tokenSequencePatterns);
-    
-    try {
-      pw = new PrintWriter(new File(TEMP_ANALYSIS));
-    } catch (FileNotFoundException fnfe) {
-      fnfe.printStackTrace();
-      throw new RuntimeException();
-    }
+    /*
+     * try { pw = new PrintWriter(new File(TEMP_ANALYSIS)); } catch
+     * (FileNotFoundException fnfe) { fnfe.printStackTrace(); throw new
+     * RuntimeException(); }
+     */
+    dateTimeComplexFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    dateSimpleFormatter = new SimpleDateFormat("yyyy-MM-dd");
+    parser = new Parser();
   }
 
   @Override
@@ -48,41 +56,96 @@ public class EntityValidator implements IPipelineStep {
     List<TripleWrapper> validatedTriplesWrapper = new ArrayList<>();
 
     for (TripleWrapper tripleWrapper : triplesWrapper) {
-      Sentence subject = new Sentence(tripleWrapper.getTriple().getArgument1().getText());
-      List<String> nerTags = subject.nerTags();
-      if (nerTags.contains("PERSON") || nerTags.contains("ORGANIZATION")) {
-        validatedTriplesWrapper.add(tripleWrapper);
-        // pw.println("Arg1=" + triple.getArgument1() + "; Rel=" + triple.getRelation()
-        // + "; Arg2=" + triple.getArgument2());
+      if (tripleWrapper.getTriple().getArgument1().getText().trim().length() == 0) {
+        continue;
+      }
+      try {
+        Sentence subject = new Sentence(tripleWrapper.getTriple().getArgument1().getText());
+        List<String> nerTags = subject.nerTags();
+        if (nerTags.contains("PERSON") || nerTags.contains("ORGANIZATION")) {
+          validatedTriplesWrapper.add(tripleWrapper);
+        }
+        // NOTE: For example, allow triples about countries
+        // NOTE: Consider adding additional validation rules or modifying the ones above
+        // to only let triples pass with location info
+        /*
+         * if (token.ner().equals("LOCATION") || token.ner().equals("COUNTRY") ||
+         * token.ner().equals("CITY") || token.ner().equals("STATE_OR_PROVINCE")) {
+         * containsWhere = true; timeDateIndexes.add(token.index() - 1);
+         * newsArticle.getTime(); }
+         */
+        // pw.println(sent);
+        // pw.println(sent.nerTags());
 
+      } catch (IllegalStateException ise) {
+        System.out
+            .println("Invalid subject according to NER {" + tripleWrapper.getTriple().getArgument1().getText() + "}");
+        continue;
       }
     }
-    
+
     if (validatedTriplesWrapper.size() > 0) {
       Sentence sent = new Sentence(sentence);
 
-      String extractedDate = extractTemporalMetaInfo(sent);
-      // TODO: Add location meta info
-      String extractedLocation = extractLocationMetaInfo(sent);
-
-      for (TripleWrapper tripleWrapper : validatedTriplesWrapper) {
-        if (extractedDate != null) { 
-          tripleWrapper.setExtractedDate(extractedDate);
+      String extractedDateExpression = extractTemporalMetaInfo(sent);
+      String extractedDate = null;
+      
+      // NOTE: Getting news article date as reference
+      Date referenceDate;
+      try {
+        referenceDate = dateTimeComplexFormatter.parse(validatedTriplesWrapper.get(0).getNewsArticle().getTime());
+      } catch(ParseException pe) {
+        pe.printStackTrace();
+        throw new RuntimeException();
+      }
+      
+      if (extractedDateExpression != null) {
+        // NOTE: From the date expression within the sentence, try to determine an actual date
+        // TODO: Need to add code to handle the case of ranges, when Natty detects from/to
+        
+        List<DateGroup> groups = parser.parse(extractedDateExpression, referenceDate);
+        if (groups.size() > 0) {
+          extractedDate = dateSimpleFormatter.format(groups.get(0).getDates().get(0));
         }
-        if (extractedLocation != null) {
-          tripleWrapper.setExtractedLocation(extractedLocation);
-        }
+        
+        // TODO: Research if using more capabilities of Natty would be useful
+        /*
+        for (DateGroup group : groups) {
+          List<Date> dates = group.getDates();
+          int line = group.getLine();
+          int column = group.getPosition();
+          String matchingValue = group.getText();
+          String syntaxTree = group.getSyntaxTree().toStringTree();
+          Map<String, List<ParseLocation>> parseMap = group.getParseLocations();
+          boolean isRecurring = group.isRecurring();
+          Date recursUntil = group.getRecursUntil();
+        }*/
       }
 
-      /*
-       * if (token.ner().equals("LOCATION") || token.ner().equals("COUNTRY") ||
-       * token.ner().equals("CITY") || token.ner().equals("STATE_OR_PROVINCE")) {
-       * containsWhere = true; timeDateIndexes.add(token.index() - 1);
-       * newsArticle.getTime(); }
-       */
-      // pw.println(sent);
-      // pw.println(sent.nerTags());
+      //tripleWrapper.setExtractedDate(extractedDate);
+      // TODO: Add location meta info
+      String extractedLocationExpression = extractLocationMetaInfo(sent);
 
+      for (TripleWrapper tripleWrapper : validatedTriplesWrapper) {
+        // If there is a temporal expression then either save the date converted from it
+        // after processing it through Natty; or the raw temporal expression if the expression was not
+        // to transform
+        if (extractedDateExpression != null) {
+          if (extractedDate != null) {
+            tripleWrapper.setExtractedDate(extractedDate);  
+          } else {
+            tripleWrapper.setExtractedDate(extractedDateExpression);
+          }
+        } else {
+          // If there was no temporal expression, then, for the moment, save the news article date
+          // simple
+          tripleWrapper.setExtractedDate(dateSimpleFormatter.format(referenceDate));
+        }
+        
+        if (extractedLocationExpression != null) {
+          tripleWrapper.setExtractedLocation(extractedLocationExpression);
+        }
+      }
     }
     return validatedTriplesWrapper;
   }
@@ -110,6 +173,6 @@ public class EntityValidator implements IPipelineStep {
 
   @Override
   public void clean() {
-    pw.close();
+    // pw.close();
   }
 }

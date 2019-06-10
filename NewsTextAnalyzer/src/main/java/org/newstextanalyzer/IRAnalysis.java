@@ -44,17 +44,20 @@ import org.apache.lucene.store.FSDirectory;
 
 public class IRAnalysis {
   public final static String INDEX_DIRECTORY = "/Users/gpanez/Documents/news/the_guardian_preprocessed_index";
-  public final static String WN_EVENT_WORDS_FILE = App.WORDNET_DIRECTORY_PATH + "/" + "aggregate_event_hierarchy.csv";
-  public final static String WN_EVENT_WORDS_DEDUP_FILE = App.WORDNET_DIRECTORY_PATH + "/" + "aggregate_event_hierarchy_dedup.csv";
-  public final static String WN_EVENT_WORDS_ANALYSIS_RESULT_FILE = App.WORDNET_DIRECTORY_PATH + "/" + "aggregate_event_hierarchy_dedup_analysis.csv";
-  
+  public final static String WORDNET_DIRECTORY_PATH = "/Users/gpanez/Documents/news/wordnet_analysis";
+  public final static String WN_EVENT_WORDS_FILE = WORDNET_DIRECTORY_PATH + "/" + "aggregate_event_hierarchy.csv";
+  public final static String WN_EVENT_WORDS_DEDUP_FILE = WORDNET_DIRECTORY_PATH + "/"
+      + "aggregate_event_hierarchy_dedup.csv";
+  public final static String WN_EVENT_WORDS_ANALYSIS_RESULT_FILE = WORDNET_DIRECTORY_PATH + "/"
+      + "aggregate_event_hierarchy_dedup_analysis.csv";
+
   private final static String TIME_FIELD = "TIME";
   private final static String ID_FIELD = "ID";
   private final static String URL_FIELD = "URL";
   private final static String TITLE_FIELD = "TITLE";
   private final static String BODY_FIELD = "BODY";
-  
-  //private final static int MAX_RESULTS = 10;
+
+  // private final static int MAX_RESULTS = 10;
 
   private Analyzer analyzer;
   private Similarity similarity;
@@ -75,17 +78,17 @@ public class IRAnalysis {
       config.setSimilarity(similarity);
       config.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
       IndexWriter iwriter = new IndexWriter(directory, config);
-      
+
       File dir = new File(App.TGN_DIRECTORY_PATH);
       if (dir.exists() && dir.isDirectory()) {
         File[] subDirs = dir.listFiles();
         for (File subDir : subDirs) {
-          if (subDir.exists() && subDir.isDirectory()) {            
+          if (subDir.exists() && subDir.isDirectory()) {
             File[] newsArticleFiles = subDir.listFiles();
             for (File newsArticleFile : newsArticleFiles) {
-              NewsArticle newsArticle = new TheGuardianNewsArticle(newsArticleFile); 
-              
-              //Add file content to a document in the index
+              NewsArticle newsArticle = new TheGuardianNewsArticle(newsArticleFile);
+
+              // Add file content to a document in the index
               Document doc = new Document();
               doc.add(new TextField(TIME_FIELD, newsArticle.getTime(), Field.Store.YES));
               doc.add(new TextField(ID_FIELD, newsArticle.getId(), Field.Store.YES));
@@ -117,11 +120,12 @@ public class IRAnalysis {
         while ((line = br.readLine()) != null) {
           String URI = line.split(",")[1];
           String word = line.split(",")[0];
-          //using URI as key
+          // using URI as key
 //          if (!hm.containsKey(URI)) {
 //            hm.put(URI, word);
 //          }
-          //using word as key without using any policy to determine which synset to keep, in case they are different
+          // using word as key without using any policy to determine which synset to keep,
+          // in case they are different
           if (!hm.containsKey(word)) {
             hm.put(word, URI);
           }
@@ -138,7 +142,7 @@ public class IRAnalysis {
       e.printStackTrace();
     }
   }
-  
+
   public void explore() {
     try {
       File file = new File(WN_EVENT_WORDS_DEDUP_FILE);
@@ -152,13 +156,13 @@ public class IRAnalysis {
         }
         br.close();
         List<QueryResult> queryResults = this.searchWords(words);
-        //sorted in ascending order
+        // sorted in ascending order
         Collections.sort(queryResults);
         File fileOut = new File(WN_EVENT_WORDS_ANALYSIS_RESULT_FILE);
         Writer writer = new BufferedWriter(new FileWriter(fileOut, false));
-        //for (int i = queryResults.size() - 1; i >= queryResults.size() - 100; i--) {
+        // for (int i = queryResults.size() - 1; i >= queryResults.size() - 100; i--) {
         for (int i = queryResults.size() - 1; i >= 0; i--) {
-          //System.out.println(queryResults.get(i));
+          // System.out.println(queryResults.get(i));
           writer.write(queryResults.get(i) + ", \n");
         }
         writer.close();
@@ -180,51 +184,47 @@ public class IRAnalysis {
       // Result result = new Result(word, ireader, analyzer);
       for (String word : words) {
         QueryParser parser = new QueryParser(BODY_FIELD, analyzer);
-        //System.out.println(word);
+        // System.out.println(word);
         Query query = parser.parse("\"" + word + "\"");
-        
+
         // Get the set of results
         ScoreDoc[] hits = isearcher.search(query, 1000000).scoreDocs;
         int hitsCount = hits.length;
         hits = isearcher.search(query, 10).scoreDocs;
 
-        //new code for highlighting
-        //Uses HTML &lt;B&gt;&lt;/B&gt; tag to highlight the searched terms
+        // new code for highlighting
+        // Uses HTML &lt;B&gt;&lt;/B&gt; tag to highlight the searched terms
         Formatter formatter = new SimpleHTMLFormatter();
-        //It scores text fragments by the number of unique query terms found
-        //Basically the matching score in layman terms
+        // It scores text fragments by the number of unique query terms found
+        // Basically the matching score in layman terms
         QueryScorer scorer = new QueryScorer(query);
-        //used to markup highlighted terms found in the best sections of a text
+        // used to markup highlighted terms found in the best sections of a text
         Highlighter highlighter = new Highlighter(formatter, scorer);
-        //It breaks text up into same-size texts but does not split up spans
-        //Fragmenter fragmenter = new SimpleSpanFragmenter(scorer, 50);
+        // It breaks text up into same-size texts but does not split up spans
+        // Fragmenter fragmenter = new SimpleSpanFragmenter(scorer, 50);
         Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);
-        //breaks text up into same-size fragments with no concerns over spotting sentence boundaries.
-        //Fragmenter fragmenter = new SimpleFragmenter(10);
-        //set fragmenter to highlighter
+        // breaks text up into same-size fragments with no concerns over spotting
+        // sentence boundaries.
+        // Fragmenter fragmenter = new SimpleFragmenter(10);
+        // set fragmenter to highlighter
         highlighter.setTextFragmenter(fragmenter);
-        
+
         List<DocResult> docResults = new ArrayList<DocResult>();
         for (int i = 0; i < hits.length; i++) {
           Document hitDoc = isearcher.doc(hits[i].doc);
-          //Get stored text from found document
+          // Get stored text from found document
           String text = hitDoc.get(BODY_FIELD);
-          //Create token stream
+          // Create token stream
           TokenStream stream = TokenSources.getAnyTokenStream(ireader, hits[i].doc, BODY_FIELD, analyzer);
-          //Get highlighted text fragments
+          // Get highlighted text fragments
           String[] frags = highlighter.getBestFragments(stream, text, 10);
 //          for (String frag : frags)
 //          {
 //              System.out.println("=======================");
 //              System.out.println(frag);
 //          }
-          docResults.add(new DocResult(word, 
-              hitDoc.get(TIME_FIELD),
-              hitDoc.get(ID_FIELD),
-              hitDoc.get(URL_FIELD),
-              hitDoc.get(TITLE_FIELD),
-              hitDoc.get(BODY_FIELD), 
-              frags));
+          docResults.add(new DocResult(word, hitDoc.get(TIME_FIELD), hitDoc.get(ID_FIELD), hitDoc.get(URL_FIELD),
+              hitDoc.get(TITLE_FIELD), hitDoc.get(BODY_FIELD), frags));
         }
         queryResults.add(new QueryResult(word, hitsCount, docResults));
       }
@@ -237,7 +237,7 @@ public class IRAnalysis {
   }
 }
 
-class QueryResult implements Comparable<QueryResult>{
+class QueryResult implements Comparable<QueryResult> {
   private String word;
   private int hitsCount;
   private List<DocResult> docResults;
@@ -257,20 +257,18 @@ class QueryResult implements Comparable<QueryResult>{
     }
     return sb.toString();
   }
-  
+
   public int getHitsCount() {
     return hitsCount;
   }
-  
+
   @Override
   public int compareTo(QueryResult qr) {
     if (this.getHitsCount() == qr.getHitsCount()) {
       return 0;
-    }
-    else if (this.getHitsCount() < qr.getHitsCount()) {
+    } else if (this.getHitsCount() < qr.getHitsCount()) {
       return -1;
-    }
-    else {
+    } else {
       return 1;
     }
   }
@@ -284,7 +282,7 @@ class DocResult {
   private String title;
   private String body;
   private String[] frags;
-  
+
   private List<String> sentences;
 
   public DocResult(String word, String time, String id, String URL, String title, String body, String[] frags) {
@@ -295,7 +293,7 @@ class DocResult {
     this.title = title;
     this.body = body;
     this.frags = frags;
-    //getSentences();
+    // getSentences();
   }
 
   private void getSentences() {

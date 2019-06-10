@@ -18,35 +18,39 @@ public class TheGuardianNewsArticle extends NewsArticle {
       int countHeaderSeparator = 1;
       StringBuilder sb = new StringBuilder();
       for (int i = 0; i < lines.size(); i++) {
-        if (lines.get(i).equals(HEADER_SEPARATOR)) {
-          switch(countHeaderSeparator) {
-            case 1:
-              time = sb.toString();
-              countHeaderSeparator++;
-              break;
-            case 2:
-              id = sb.toString();
-              countHeaderSeparator++;
-              break;
-            case 3:
-              URL = sb.toString();
-              countHeaderSeparator++;
-              break;
-            case 4:
-              title = sb.toString();
-              countHeaderSeparator++;
-              break;
+        if (countHeaderSeparator < 5) {
+          if (lines.get(i).equals(HEADER_SEPARATOR)) {
+            switch(countHeaderSeparator) {
+              case 1:
+                time = lines.get(i - 1);
+                countHeaderSeparator++;
+                break;
+              case 2:
+                id = lines.get(i - 1);
+                countHeaderSeparator++;
+                break;
+              case 3:
+                URL = lines.get(i - 1);
+                countHeaderSeparator++;
+                break;
+              case 4:
+                title = lines.get(i - 1);
+                countHeaderSeparator++;
+                break;
+            }
           }
-          sb = new StringBuilder();
-        }
-        else {
-          sb.append(lines.get(i) + " ");
+        } else {
+          if (!lines.get(i - 1).equals(HEADER_SEPARATOR)) {
+            // NOTE: Separating multiline paragraphs with blank space
+            sb.append(" ");
+          }
+          sb.append(lines.get(i));
         }
       }
+      body = sb.toString();
       if (countHeaderSeparator != HEADER_ENTRIES + 1) {
         throw new Exception("File doesn't conform to format: [" + file.getName() + "]");
-      } 
-      body = sb.toString();
+      }
       super.populate(time, id, URL, title, body, NewsArticle.NewsPublication.THE_GUARDIAN);
   }
 }

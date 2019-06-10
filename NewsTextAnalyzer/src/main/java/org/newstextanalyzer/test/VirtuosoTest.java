@@ -1,4 +1,4 @@
-package org.newstextanalyzer;
+package org.newstextanalyzer.test;
 
 import org.apache.jena.ext.com.google.common.base.CaseFormat;
 import org.apache.jena.query.Query;

@@ -1,4 +1,4 @@
-package org.newstextanalyzer;
+package org.newstextanalyzer.test;
 
 import java.util.List;
 import java.util.Properties;
