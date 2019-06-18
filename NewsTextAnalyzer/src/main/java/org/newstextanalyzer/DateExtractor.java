@@ -1,5 +1,6 @@
 package org.newstextanalyzer;
 
+// TODO: Post revision of Natty, delete or extend 
 public class DateExtractor {
   // NOTE: next week means it hasn't happened yet
   private static final String[] KNOWN_IRRELEVANT_PHRASES = { "the day", "the future", "minutes later", "next week" };

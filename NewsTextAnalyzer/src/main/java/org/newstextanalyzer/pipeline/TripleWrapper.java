@@ -1,23 +1,18 @@
-package org.newstextanalyzer;
+package org.newstextanalyzer.pipeline;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import org.newstextanalyzer.NewsArticle;
 
 import edu.washington.cs.knowitall.nlp.extraction.ChunkedBinaryExtraction;
 
+/**
+ * @author gpanez
+ *
+ */
 public class TripleWrapper {
-  /*
-   * private String time; private String id; private String URL; private
-   * NewsPublication newsPublication;
-   */
-
   private ChunkedBinaryExtraction triple;
   private boolean objectMatched;
   private NewsArticle newsArticle;
   private double score;
-  private Date referenceDate;
   private String extractedDate;
   private String extractedLocation;
 
@@ -55,6 +50,10 @@ public class TripleWrapper {
   public String getLocation() {
     return extractedLocation;
   }
+  
+  public NewsArticle getNewsArticle() {
+    return newsArticle;
+  }
 
   public void setExtractedDate(String extractedDate) {
     this.extractedDate = extractedDate;
@@ -72,7 +71,5 @@ public class TripleWrapper {
     return objectMatched;
   }
   
-  public NewsArticle getNewsArticle() {
-    return newsArticle;
-  }
+  
 }

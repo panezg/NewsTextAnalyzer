@@ -1,10 +1,13 @@
-package org.newstextanalyzer;
+package org.newstextanalyzer.pipeline;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+
+import org.newstextanalyzer.pipeline.IPipelineStep.StepType;
 
 import com.joestelmach.natty.DateGroup;
 import com.joestelmach.natty.Parser;
@@ -16,10 +19,23 @@ import edu.stanford.nlp.ling.tokensregex.TokenSequencePattern;
 import edu.stanford.nlp.simple.Sentence;
 import edu.stanford.nlp.util.CoreMap;
 
+/**
+ * Inspects triples and keeps those that have interesting entity types as subjects
+ * by using Stanford Simple NLP lib
+ * In addition, if there was a temporal expression within the sentence from
+ * which the triples were extracted, it uses Natty to formalize the expression
+ * and assigns such date to the subset of validated triples from such sentence
+ *    
+ * @author gpanez
+ *
+ */
+
 public class EntityValidator implements IPipelineStep {
   // private static final String TEMP_ANALYSIS =
   // "/Users/gpanez/Documents/news/temp/analysis.txt";
-  private MultiPatternMatcher<CoreMap> multiMatcher;
+  private MultiPatternMatcher<CoreMap> temporalMultiMatcher;
+  private MultiPatternMatcher<CoreMap> personMultiMatcher;
+  private MultiPatternMatcher<CoreMap> organizationMultiMatcher;
 
   private SimpleDateFormat dateTimeComplexFormatter;
   private SimpleDateFormat dateSimpleFormatter;
@@ -34,11 +50,16 @@ public class EntityValidator implements IPipelineStep {
    */
   public EntityValidator() {
     
-    List<TokenSequencePattern> tokenSequencePatterns = new ArrayList<>();
-    tokenSequencePatterns.add(TokenSequencePattern.compile("([ner: TIME])+ [ner: DATE]"));
-    tokenSequencePatterns.add(TokenSequencePattern.compile("([ner: DATE] [ner: TIME])"));
-    tokenSequencePatterns.add(TokenSequencePattern.compile("([ner: DATE]){2,}"));
-    multiMatcher = TokenSequencePattern.getMultiPatternMatcher(tokenSequencePatterns);
+    List<TokenSequencePattern> temporalTokenSequencePatterns = new ArrayList<>();
+    temporalTokenSequencePatterns.add(TokenSequencePattern.compile("([ner: TIME])+ [ner: DATE]"));
+    temporalTokenSequencePatterns.add(TokenSequencePattern.compile("([ner: DATE] [ner: TIME])"));
+    temporalTokenSequencePatterns.add(TokenSequencePattern.compile("([ner: DATE]){2,}"));
+    temporalMultiMatcher = TokenSequencePattern.getMultiPatternMatcher(temporalTokenSequencePatterns);
+    
+    List<TokenSequencePattern> personSequencePatterns = new ArrayList<>();
+    personSequencePatterns.add(TokenSequencePattern.compile("([ner: PERSON])+"));
+    personMultiMatcher = TokenSequencePattern.getMultiPatternMatcher(personSequencePatterns);
+    
     /*
      * try { pw = new PrintWriter(new File(TEMP_ANALYSIS)); } catch
      * (FileNotFoundException fnfe) { fnfe.printStackTrace(); throw new
@@ -60,10 +81,26 @@ public class EntityValidator implements IPipelineStep {
         continue;
       }
       try {
-        Sentence subject = new Sentence(tripleWrapper.getTriple().getArgument1().getText());
-        List<String> nerTags = subject.nerTags();
+        Sentence rawSubject = new Sentence(tripleWrapper.getTriple().getArgument1().getText());
+        // TODO: Add kind of subject meta info, so look up can try different queries
+        // TODO: How to deal when there are 2 or more entity types in the subject
+        // TODO: Senator Elizabeth Warren is recognized as TITLE, PERSON, PERSON, what should the subject be
+        // what should the link be?
+        // TODO: But, Theresa May's Government will become Theresa May if you follow such rule :/
+        // TODO: The possessive after the PERSON is strong signal is not about the person
+        // maybe if the sentences include said, discard them because they are usually citations'
+        // TODO: using related to entities property might be simpler and faster than the above
+        List<String> nerTags = rawSubject.nerTags();
         if (nerTags.contains("PERSON") || nerTags.contains("ORGANIZATION")) {
-          validatedTriplesWrapper.add(tripleWrapper);
+          String subjectPersonAbout = extractPersonSequence(rawSubject);
+          System.out.println(rawSubject);
+          System.out.println("---> " + subjectPersonAbout);
+          String subject = new String();
+          if (subject != null) {
+            //TODO: Need another meta info since I cannot change the Chunked object
+            //tripleWrapper.getTriple().
+            validatedTriplesWrapper.add(tripleWrapper);
+          }
         }
         // NOTE: For example, allow triples about countries
         // NOTE: Consider adding additional validation rules or modifying the ones above
@@ -78,8 +115,7 @@ public class EntityValidator implements IPipelineStep {
         // pw.println(sent.nerTags());
 
       } catch (IllegalStateException ise) {
-        System.out
-            .println("Invalid subject according to NER {" + tripleWrapper.getTriple().getArgument1().getText() + "}");
+        System.out.println("Invalid subject according to NER {" + tripleWrapper.getTriple().getArgument1().getText() + "}");
         continue;
       }
     }
@@ -155,7 +191,7 @@ public class EntityValidator implements IPipelineStep {
     // Finds all non-overlapping sequences using specified list of patterns
     // When multiple patterns overlap, matches selected based on priority, length,
     // etc.
-    List<SequenceMatchResult<CoreMap>> matches = multiMatcher.findNonOverlapping(tokens);
+    List<SequenceMatchResult<CoreMap>> matches = temporalMultiMatcher.findNonOverlapping(tokens);
     if (matches.size() > 0) {
       return matches.get(0).group();
     }
@@ -166,13 +202,22 @@ public class EntityValidator implements IPipelineStep {
     return null;
   }
 
+  private String extractPersonSequence(Sentence rawSubject) {
+    List<CoreLabel> tokens = rawSubject.asCoreLabels(Sentence::posTags, Sentence::nerTags);
+    List<SequenceMatchResult<CoreMap>> matches = personMultiMatcher.findNonOverlapping(tokens);
+    if (matches.size() > 0) {
+      return matches.get(0).group();
+    }
+    return null;
+  }
+  
   @Override
-  public Type getType() {
-    return Type.VALIDATOR;
+  public StepType getStepType() {
+    return StepType.VALIDATOR;
   }
 
   @Override
-  public void clean() {
+  public void finish(Map<StepType, Object> sink) {
     // pw.close();
   }
 }

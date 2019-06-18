@@ -10,15 +10,20 @@ import java.util.Set;
 import edu.stanford.nlp.coref.data.CorefChain;
 import edu.stanford.nlp.ie.util.RelationTriple;
 import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.ling.tokensregex.MultiPatternMatcher;
+import edu.stanford.nlp.ling.tokensregex.SequenceMatchResult;
+import edu.stanford.nlp.ling.tokensregex.TokenSequencePattern;
 import edu.stanford.nlp.naturalli.NaturalLogicAnnotations;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreEntityMention;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.stanford.nlp.simple.Sentence;
 import edu.stanford.nlp.trees.Constituent;
 import edu.stanford.nlp.trees.LabeledScoredConstituentFactory;
 import edu.stanford.nlp.trees.Tree;
+import edu.stanford.nlp.util.CoreMap;
 
 public class BasicPipeline {
   private StanfordCoreNLP pipeline;
@@ -261,5 +266,97 @@ public class BasicPipeline {
 
       System.out.println();
     }
+  }
+  
+  public void runTest(String text) {
+    CoreDocument document = new CoreDocument(text);
+    // annnotate the document
+    pipeline.annotate(document);
+    // examples
+
+    for (int i = 0; i < document.sentences().size(); i++) {
+      // text of the sentence
+      CoreSentence sentence = document.sentences().get(i);
+
+      boolean containsPerson = false;
+      boolean containsWhen = false;
+      boolean containsWhere = false;
+      List<Integer> personIndexes = new ArrayList<Integer>();
+      List<Integer> timeDateIndexes = new ArrayList<Integer>();
+
+      // tokens
+      List<CoreLabel> tokens = sentence.tokens();
+      for (CoreLabel token : tokens) {
+        /*
+        if (token.ner().equals("PERSON") && token.word().equals(personName)) {
+          containsPerson = true;
+          personIndexes.add(token.index() - 1);
+
+        }
+        if (token.ner().equals("TIME") || token.ner().equals("DATE")) {
+          containsWhen = true;
+          timeDateIndexes.add(token.index() - 1);
+        }
+        if (token.ner().equals("LOCATION") || token.ner().equals("COUNTRY")
+            || token.ner().equals("STATE_OR_PROVINCE")) {
+          containsWhere = true;
+          timeDateIndexes.add(token.index() - 1);
+        }*/
+        System.out.print(token);
+        System.out.println(" " + token.ner()); 
+      }
+      /*if (!containsPerson || !containsWhen || !containsWhere) {
+        continue;
+      } else {
+        System.out.println("Sentence: " + sentence);
+      }*/
+    }
+  }
+  
+  public void runTest2(String text) {
+    Sentence subject = new Sentence(text);
+    // TODO: Add kind of subject meta info, so look up can try different queries
+    // TODO: How to deal when there are 2 or more entity types in the subject
+    List<String> nerTags = subject.nerTags();
+    int i = 0;
+    boolean sequence = false;
+    StringBuilder sb = new StringBuilder();
+    
+    MultiPatternMatcher<CoreMap> multiMatcher;
+      
+    List<TokenSequencePattern> tokenSequencePatterns = new ArrayList<>();
+    tokenSequencePatterns.add(TokenSequencePattern.compile("([ner: PERSON])+"));
+    multiMatcher = TokenSequencePattern.getMultiPatternMatcher(tokenSequencePatterns);
+    List<CoreLabel> tokens = subject.asCoreLabels(Sentence::posTags, Sentence::nerTags);
+    List<SequenceMatchResult<CoreMap>> matches = multiMatcher.findNonOverlapping(tokens);
+    if (matches.size() > 0) {
+      System.out.println(matches.get(0).group());
+    }
+    
+    /*
+    while (i < nerTags.size()) {
+      if (nerTags.get(i).equals("PERSON")) {
+        // If first token that has NER tag as PERSON
+        if (sb.length() != 0) {
+          sequence = true;
+          sb.append(" ");
+        }
+        sb.append(subject.originalText(i));
+        int j = i + 1;
+        if (j < nerTags.size() && !nerTags.get(j).equals("PERSON")) {
+          break;
+        }
+      }
+      i++;
+    }*/
+    System.out.println(nerTags);
+    //System.out.println(sb);
+  }
+  
+  public static void main(String[] args) {
+    BasicPipeline bp = new BasicPipeline();
+    bp.runTest("Senator Elizabeth Warren");
+    System.out.println("---------");
+    bp.runTest2("Senator Elizabeth Warren");
   }
 }

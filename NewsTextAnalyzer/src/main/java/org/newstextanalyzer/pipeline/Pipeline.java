@@ -1,15 +1,28 @@
-package org.newstextanalyzer;
+package org.newstextanalyzer.pipeline;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+
+import org.newstextanalyzer.NewsArticle;
+import org.newstextanalyzer.pipeline.IPipelineStep.StepType;
 
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 
+/**
+ * Process one news article at a time, extracts sentences from the article
+ * and feeds each sentence to the underlying pipeline steps
+ * 
+ * @author gpanez
+ *  
+ */
 public class Pipeline implements IPipeline {
   private IPipelineStep[] pipelineSteps;
+  private Map<StepType, Object> sink;
   private StanfordCoreNLP scNLPPipeline;
   private boolean active;
   private int numSentenceSeen;
@@ -19,6 +32,7 @@ public class Pipeline implements IPipeline {
 
   public Pipeline(IPipelineStep[] pipelineSteps) {
     this.pipelineSteps = pipelineSteps;
+    this.sink = new HashMap<>();
     Properties props = new Properties();
     props.setProperty("annotators", "tokenize,ssplit");
     this.scNLPPipeline = new StanfordCoreNLP(props);
@@ -40,20 +54,18 @@ public class Pipeline implements IPipeline {
       }
       
       /*
-      if (numSentenceSeen < 10000) {
+      if (numSentenceSeen < 250000) {
         continue;
-      }
-      if (numSentenceSeen == 20000) {
-        for (IPipelineStep pipelineStep : pipelineSteps) {
-          pipelineStep.clean();
-        }
+      }*/
+      
+      if (numSentenceSeen == 1000) {
         this.active = false;
       }
-      */
+      
       String carrySentence = null;
       List<Object> carryExtras = new ArrayList<>();
       for (IPipelineStep pipelineStep : pipelineSteps) {
-        switch (pipelineStep.getType()) {
+        switch (pipelineStep.getStepType()) {
           case CLASSIFIER:
             carrySentence = null;
             if ((Boolean) pipelineStep.execute(sentence.text())) {
@@ -82,6 +94,7 @@ public class Pipeline implements IPipeline {
             }
             break;
           case LINKER:
+          case INTERLINKER:
             if (carrySentence != null && carryExtras.size() > 0) {
               @SuppressWarnings("unchecked")
               List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) (pipelineStep.execute(carrySentence,
@@ -97,6 +110,13 @@ public class Pipeline implements IPipeline {
         }
       }
     }
+  }
+  
+  public Map<StepType, Object> finish() {
+    for (IPipelineStep pipelineStep : pipelineSteps) {
+      pipelineStep.finish(sink);
+    }
+    return sink;
   }
 
   public String toString() {

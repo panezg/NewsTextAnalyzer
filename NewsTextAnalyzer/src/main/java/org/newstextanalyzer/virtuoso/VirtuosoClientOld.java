@@ -8,7 +8,7 @@ import java.util.Map;
 import org.apache.jena.ext.com.google.common.base.CaseFormat;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.RDFNode;
-import org.newstextanalyzer.TripleWrapper;
+import org.newstextanalyzer.pipeline.TripleWrapper;
 import org.newstextanalyzer.sentiment.Tweet;
 
 import edu.washington.cs.knowitall.nlp.extraction.ChunkedBinaryExtraction;

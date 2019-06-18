@@ -1,5 +1,8 @@
 package org.newstextanalyzer.test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.jena.ext.com.google.common.base.CaseFormat;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryFactory;
@@ -10,6 +13,7 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.VCARD;
+import org.newstextanalyzer.virtuoso.VirtuosoClient;
 
 import virtuoso.jena.driver.VirtGraph;
 import virtuoso.jena.driver.VirtuosoQueryExecution;
@@ -131,8 +135,22 @@ public class VirtuosoTest {
     }
   }
   
+  public static void temp() {
+      VirtGraph set = new VirtGraph("jdbc:virtuoso://localhost:1111", "dba", "dba");
+
+      String str = "SELECT *  FROM <http://test1> WHERE { ?s ?p ?o . ?p <http://myuri/singletonPropertyOf> ?rp ; <http://myuri/rawSubject> ?rs . }";
+      VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(str, set);
+      ResultSet results = vqe.execSelect();
+      while (results.hasNext()) {
+        QuerySolution qs = results.nextSolution();
+        RDFNode s = qs.get("s");
+        RDFNode rs = qs.get("rs");
+        System.out.println(s + " -> " + rs);
+      }
+  }
+  
   public static void main(String[] args) {
-    foo();
+    temp();
     System.out.println("done");
   }
 }

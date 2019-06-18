@@ -1,8 +1,12 @@
 package org.newstextanalyzer;
 
+import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.newstextanalyzer.pipeline.IPipeline;
+import org.newstextanalyzer.pipeline.IPipelineStep.StepType;
 
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreSentence;
@@ -53,5 +57,11 @@ public class ResignREBoot implements IPipeline {
 //        }
       }
     }
+  }
+  
+  @Override
+  public Map<StepType, Object> finish() {
+    // TODO Auto-generated method stub
+    return null;
   }
 }

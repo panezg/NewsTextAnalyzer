@@ -10,7 +10,7 @@ import java.util.Map;
 import org.apache.jena.ext.com.google.common.base.CaseFormat;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.RDFNode;
-import org.newstextanalyzer.TripleWrapper;
+import org.newstextanalyzer.pipeline.TripleWrapper;
 import org.newstextanalyzer.sentiment.Tweet;
 
 import edu.washington.cs.knowitall.nlp.extraction.ChunkedBinaryExtraction;
@@ -24,6 +24,11 @@ public class VirtuosoClient {
   public static final String URI = "http://myuri/";
   public static final String OWL_TIME_URI = "http://www.w3.org/2006/time#";
   public static final String WORLD_TIME_ZONE_URI = "http://www.w3.org/2006/timezone-world";
+  public static final String OWL_URI = "http://www.w3.org/2002/07/owl#";
+  
+  public static final String LOCAL_SPARQL_ENDPOINT = "<http://test1>";
+  public static final String LIVE_DBPEDIA_SPARQL_ENDPOINT = "<http://dbpedia-live.openlinksw.com/sparql>";
+  
 
   private static VirtuosoClient instance;
 
@@ -45,7 +50,7 @@ public class VirtuosoClient {
   }
 
   public void clean() {
-    String str = "CLEAR GRAPH <http://test1>";
+    String str = "CLEAR GRAPH ".concat(LOCAL_SPARQL_ENDPOINT);
     VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(str, set);
     vur.exec();
   }
@@ -105,7 +110,7 @@ public class VirtuosoClient {
     sb.append("PREFIX time: <").append(OWL_TIME_URI).append("> ");
     sb.append("PREFIX tz-w: <").append(WORLD_TIME_ZONE_URI).append("> ");
 
-    sb.append("INSERT INTO GRAPH <http://test1> { ");
+    sb.append("INSERT INTO GRAPH ").append(LOCAL_SPARQL_ENDPOINT).append(" { ");
     sb.append(subject).append(" ").append(predicate).append(" ");
     if (tripleWrapper.isObjectMatched()) {
       sb.append(object).append(" . ");
@@ -204,7 +209,7 @@ public class VirtuosoClient {
     StringBuilder sb = new StringBuilder();
     sb.append("PREFIX m: <").append(URI).append("> ");
     sb.append("PREFIX time: <").append(OWL_TIME_URI).append("> ");
-    sb.append("SELECT * FROM <http://test1> WHERE { ?s ?p ?o . ");
+    sb.append("SELECT * FROM ").append(LOCAL_SPARQL_ENDPOINT).append(" WHERE { ?s ?p ?o . ");
     sb.append("?p m:rawSubject ?rs ; ");
     sb.append("m:rawPredicate ?rp ; ");
     sb.append("m:rawObject ?ro ; ");
@@ -227,7 +232,7 @@ public class VirtuosoClient {
   public void updateTweetSource(RDFNode predicate, String tweetSource) {
     if (isTweetSourceAvailableAlready(predicate)) {
       StringBuilder sb = new StringBuilder();
-      sb.append("WITH <http://test1> ").append("DELETE WHERE { ")
+      sb.append("WITH ").append(LOCAL_SPARQL_ENDPOINT).append(" DELETE WHERE { ")
           // NOTE: .asResource() already provides URI
           .append("<").append(predicate.asResource().toString()).append("> ").append("<").append(URI)
           .append("hasTweetSource> ").append("?ts").append(" . } ");
@@ -239,7 +244,7 @@ public class VirtuosoClient {
 
   private boolean isTweetSourceAvailableAlready(RDFNode predicate) {
     StringBuilder sb = new StringBuilder();
-    sb.append("SELECT * FROM <http://test1> WHERE { ")
+    sb.append("SELECT * FROM ").append(LOCAL_SPARQL_ENDPOINT).append(" WHERE { ")
         // NOTE: .asResource() already provides URI
         .append("<").append(predicate.asResource().toString()).append("> ").append("<").append(URI)
         .append("hasTweetSource> ?ts . }");
@@ -251,8 +256,9 @@ public class VirtuosoClient {
 
   private void insertTweetSource(RDFNode predicate, String tweetSource) {
     StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO GRAPH <http://test1> { ").append("<").append(predicate.asResource().toString()).append("> ")
-        .append("<").append(URI).append("hasTweetSource> \"").append(tweetSource).append("\" . }");
+    sb.append("INSERT INTO GRAPH ").append(LOCAL_SPARQL_ENDPOINT).append(" { ");
+    sb.append("<").append(predicate.asResource().toString()).append("> ");
+    sb.append("<").append(URI).append("hasTweetSource> \"").append(tweetSource).append("\" . }");
 
     VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(sb.toString(), set);
     vur.exec();
@@ -262,7 +268,7 @@ public class VirtuosoClient {
   public void updateSentimentScore(RDFNode predicate, Double sentimentScore) {
     if (isSentimentScoreAvailableAlready(predicate)) {
       StringBuilder sb = new StringBuilder();
-      sb.append("WITH <http://test1> ").append("DELETE WHERE { ")
+      sb.append("WITH ").append(LOCAL_SPARQL_ENDPOINT).append(" DELETE WHERE { ")
           // NOTE: .asResource() already provides URI
           .append("<").append(predicate.asResource().toString()).append("> ").append("<").append(URI)
           .append("sentimentScore> ").append("?ss").append(" . } ");
@@ -274,7 +280,7 @@ public class VirtuosoClient {
 
   private boolean isSentimentScoreAvailableAlready(RDFNode predicate) {
     StringBuilder sb = new StringBuilder();
-    sb.append("SELECT * FROM <http://test1> WHERE { ")
+    sb.append("SELECT * FROM ").append(LOCAL_SPARQL_ENDPOINT).append(" WHERE { ")
         // NOTE: .asResource() already provides URI
         .append("<").append(predicate.asResource().toString()).append("> ").append("<").append(URI)
         .append("sentimentScore> ?ss . }");
@@ -286,10 +292,69 @@ public class VirtuosoClient {
 
   private void insertSentimentScore(RDFNode predicate, Double sentimentScore) {
     StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO GRAPH <http://test1> { ").append("<").append(predicate.asResource().toString()).append("> ")
-        .append("<").append(URI).append("sentimentScore> ").append(sentimentScore).append(" . }");
+    sb.append("INSERT INTO GRAPH ").append(LOCAL_SPARQL_ENDPOINT).append(" { ");
+    sb.append("<").append(predicate.asResource().toString()).append("> ");
+    sb.append("<").append(URI).append("sentimentScore> ").append(sentimentScore).append(" . }");
 
     VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(sb.toString(), set);
     vur.exec();
   }
+  
+  /**
+   * Inserts or update owl:sameAs triples for the subjects that were successfully
+   * interlinked by the interlinker within the pipeline
+   * 
+   * @param rawSubjectsInterlinked
+   */
+  public void updateInterlinks(Map<String, String> rawSubjectsInterlinked) {
+    for (String rawSubject : rawSubjectsInterlinked.keySet()) {
+      String interlinkURI = rawSubjectsInterlinked.get(rawSubject);
+      if (interlinkURI != null) {
+        String subject = getURIfromRawSubject(rawSubject);
+        if (isInterlinkAvailableAlready(subject)) {
+          StringBuilder sb = new StringBuilder();
+          sb.append("PREFIX owl: <").append(OWL_URI).append("> ");
+          sb.append("WITH ").append(LOCAL_SPARQL_ENDPOINT).append(" DELETE WHERE { ");
+          sb.append("<").append(subject).append("> ");
+          sb.append("owl:sameAs ?sa . } ");
+          VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(sb.toString(), set);
+          vur.exec();
+        }
+        insertInterlink(subject, interlinkURI);
+      }
+    }
+  }
+  
+  private boolean isInterlinkAvailableAlready(String subject) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("PREFIX owl: <").append(OWL_URI).append("> ");
+    sb.append("SELECT * FROM ").append(LOCAL_SPARQL_ENDPOINT).append(" WHERE { ");
+    sb.append("<").append(subject).append("> ");
+    sb.append("owl:sameAs ?sa . }");
+    //System.out.println(sb.toString());
+    VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create(sb.toString(), set);
+    ResultSet results = vqe.execSelect();
+    return results.hasNext();
+  }
+  
+  private String getURIfromRawSubject(String rawSubject) {
+    StringBuilder sbTemp = new StringBuilder();
+    sbTemp.append(URI).append(toCamelCaseURIReady(rawSubject, true));
+    return sbTemp.toString();
+  }
+  
+  private void insertInterlink(String subject, String interlinkURI) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("PREFIX owl: <").append(OWL_URI).append("> ");
+    sb.append("INSERT INTO GRAPH ").append(LOCAL_SPARQL_ENDPOINT).append(" { ");
+    sb.append("<").append(subject).append("> ");
+    sb.append("owl:sameAs ").append("<").append(interlinkURI).append("> . }");
+    //System.out.println(sb.toString());
+    VirtuosoUpdateRequest vur = VirtuosoUpdateFactory.create(sb.toString(), set);
+    vur.exec();
+  }
+  
+  // NOTE: Queries for Questioner
+  
+  public void q() {}
 }

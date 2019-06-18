@@ -1,8 +1,12 @@
-package org.newstextanalyzer;
+package org.newstextanalyzer.pipeline;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import org.newstextanalyzer.NewsArticle;
+import org.newstextanalyzer.pipeline.IPipelineStep.StepType;
 
 import edu.washington.cs.knowitall.extractor.ReVerbExtractor;
 import edu.washington.cs.knowitall.extractor.conf.ConfidenceFunction;
@@ -11,6 +15,13 @@ import edu.washington.cs.knowitall.nlp.ChunkedSentence;
 import edu.washington.cs.knowitall.nlp.OpenNlpSentenceChunker;
 import edu.washington.cs.knowitall.nlp.extraction.ChunkedBinaryExtraction;
 
+/**
+ * Leverages ReVerb and OpenNLP libs to extract triples from a sentence
+ * Triples with confidence levels less than threshold are discarded 
+ * 
+ * @author gpanez
+ *
+ */
 public class ReVerbWrapper implements IPipelineStep {
   public static double CONFIDENCE_THRESHOLD = 0.75;
   
@@ -44,6 +55,7 @@ public class ReVerbWrapper implements IPipelineStep {
     // System.out.println(token + " " + posTag + " " + chunkTag);
     // }
     
+    // NOTE: ChunkedBinaryExtraction object includes getSentence() method
     //List<ChunkedBinaryExtraction> triples = new ArrayList<>();
     List<TripleWrapper> triplesWrapper = new ArrayList<>();
     for (ChunkedBinaryExtraction triple : reverb.extract(sent)) {
@@ -59,12 +71,12 @@ public class ReVerbWrapper implements IPipelineStep {
   }
 
   @Override
-  public Type getType() {
-    return Type.EXTRACTOR;
+  public StepType getStepType() {
+    return StepType.EXTRACTOR;
   }
 
   @Override
-  public void clean() {
+  public void finish(Map<StepType, Object> sink) {
     return;
   }
 }
