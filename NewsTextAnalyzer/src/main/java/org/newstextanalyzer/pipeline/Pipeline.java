@@ -43,25 +43,26 @@ public class Pipeline implements IPipeline {
     if (!active) {
       return;
     }
-    String docText = newsArticle.getTitle() + ".\n" + newsArticle.getBody().toString();
+    String docText = newsArticle.getBody().toString() + ".\n" + newsArticle.getTitle();
     CoreDocument document = new CoreDocument(docText);
     scNLPPipeline.annotate(document);
 
+    boolean firstValidLinkedBoundSentenceFromNewsArticle = true;
     for (CoreSentence sentence : document.sentences()) {
       numSentenceSeen++;
       if (numSentenceSeen % 10000 == 0) {
         System.out.println("numSentenceSeen: " + numSentenceSeen);
       }
-      
+      // NOTE: Always parse first paragraph?
       /*
-      if (numSentenceSeen < 250000) {
+      if (numSentenceSeen < 100000) {
         continue;
-      }*/
+      }
       
       if (numSentenceSeen == 1000) {
         this.active = false;
       }
-      
+      */
       String carrySentence = null;
       List<Object> carryExtras = new ArrayList<>();
       for (IPipelineStep pipelineStep : pipelineSteps) {
@@ -96,10 +97,15 @@ public class Pipeline implements IPipeline {
           case LINKER:
           case INTERLINKER:
             if (carrySentence != null && carryExtras.size() > 0) {
+              // NOTE: Indicating linkers if this is a new article, so they clean their subject references for the previous document
               @SuppressWarnings("unchecked")
               List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) (pipelineStep.execute(carrySentence,
-                  carryExtras.get(0)));
+                  carryExtras.get(0), firstValidLinkedBoundSentenceFromNewsArticle));
               carryExtras.set(0, triplesWrapper);
+              // NOTE: Required to be here, because the linker needs to create DS
+              // before processing the first linked-bound valid sentence
+              // Linker might nor run on the first sentence of the article because that one is not valid
+              firstValidLinkedBoundSentenceFromNewsArticle = false;
             }
             break;
           case PERSISTOR:
@@ -113,6 +119,7 @@ public class Pipeline implements IPipeline {
   }
   
   public Map<StepType, Object> finish() {
+    System.out.println(this);
     for (IPipelineStep pipelineStep : pipelineSteps) {
       pipelineStep.finish(sink);
     }

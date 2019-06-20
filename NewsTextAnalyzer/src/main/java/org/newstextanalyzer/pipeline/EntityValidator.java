@@ -92,15 +92,11 @@ public class EntityValidator implements IPipelineStep {
         // TODO: using related to entities property might be simpler and faster than the above
         List<String> nerTags = rawSubject.nerTags();
         if (nerTags.contains("PERSON") || nerTags.contains("ORGANIZATION")) {
-          String subjectPersonAbout = extractPersonSequence(rawSubject);
-          System.out.println(rawSubject);
-          System.out.println("---> " + subjectPersonAbout);
-          String subject = new String();
-          if (subject != null) {
-            //TODO: Need another meta info since I cannot change the Chunked object
-            //tripleWrapper.getTriple().
-            validatedTriplesWrapper.add(tripleWrapper);
+          SequenceMatchResult<CoreMap> subjectPersonAbout = extractPersonSequence(rawSubject);
+          if (subjectPersonAbout != null) {
+            tripleWrapper.setSubjectPersonAbout(subjectPersonAbout);
           }
+          validatedTriplesWrapper.add(tripleWrapper);
         }
         // NOTE: For example, allow triples about countries
         // NOTE: Consider adding additional validation rules or modifying the ones above
@@ -138,10 +134,14 @@ public class EntityValidator implements IPipelineStep {
       if (extractedDateExpression != null) {
         // NOTE: From the date expression within the sentence, try to determine an actual date
         // TODO: Need to add code to handle the case of ranges, when Natty detects from/to
-        
-        List<DateGroup> groups = parser.parse(extractedDateExpression, referenceDate);
-        if (groups.size() > 0) {
-          extractedDate = dateSimpleFormatter.format(groups.get(0).getDates().get(0));
+        try {
+          List<DateGroup> groups = parser.parse(extractedDateExpression, referenceDate);
+          if (groups.size() > 0) {
+            extractedDate = dateSimpleFormatter.format(groups.get(0).getDates().get(0));
+          }
+        } catch (NullPointerException npe) {
+          System.out.println("npe for -> " + extractedDateExpression + " ; " + referenceDate);
+          extractedDate = null;
         }
         
         // TODO: Research if using more capabilities of Natty would be useful
@@ -202,11 +202,12 @@ public class EntityValidator implements IPipelineStep {
     return null;
   }
 
-  private String extractPersonSequence(Sentence rawSubject) {
+  private SequenceMatchResult<CoreMap> extractPersonSequence(Sentence rawSubject) {
     List<CoreLabel> tokens = rawSubject.asCoreLabels(Sentence::posTags, Sentence::nerTags);
     List<SequenceMatchResult<CoreMap>> matches = personMultiMatcher.findNonOverlapping(tokens);
     if (matches.size() > 0) {
-      return matches.get(0).group();
+      return matches.get(0);
+      //return matches.get(0).group();
     }
     return null;
   }

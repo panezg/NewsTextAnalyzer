@@ -2,6 +2,8 @@ package org.newstextanalyzer.pipeline;
 
 import org.newstextanalyzer.NewsArticle;
 
+import edu.stanford.nlp.ling.tokensregex.SequenceMatchResult;
+import edu.stanford.nlp.util.CoreMap;
 import edu.washington.cs.knowitall.nlp.extraction.ChunkedBinaryExtraction;
 
 /**
@@ -15,6 +17,9 @@ public class TripleWrapper {
   private double score;
   private String extractedDate;
   private String extractedLocation;
+  // NOTE: For convenience using StanfordNLP object
+  private SequenceMatchResult<CoreMap> subjectPersonAbout;
+  private SequenceMatchResult<CoreMap> subjectReplacement;
 
   public TripleWrapper(ChunkedBinaryExtraction triple, NewsArticle newsArticle, double score) {
     this.triple = triple;
@@ -28,8 +33,12 @@ public class TripleWrapper {
     return triple;
   }
 
-  public String getScore() {
+  public String getScoreAsString() {
     return String.valueOf(score);
+  }
+  
+  public double getScore() {
+    return score;
   }
   
   public String getExtractedDate() {
@@ -70,6 +79,20 @@ public class TripleWrapper {
   public boolean isObjectMatched() {
     return objectMatched;
   }
+ 
+  public SequenceMatchResult<CoreMap> getSubjectPersonAbout() {
+    return subjectPersonAbout;
+  }
+
+  public void setSubjectPersonAbout(SequenceMatchResult<CoreMap> subjectPersonAbout) {
+    this.subjectPersonAbout = subjectPersonAbout;
+  }
   
-  
+  public SequenceMatchResult<CoreMap> getSubjectReplacement() {
+    return subjectReplacement;
+  }
+
+  public void setSubjectReplacement(SequenceMatchResult<CoreMap> subjectReplacement) {
+    this.subjectReplacement = subjectReplacement;
+  }
 }

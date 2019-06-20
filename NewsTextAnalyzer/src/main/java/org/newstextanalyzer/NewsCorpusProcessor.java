@@ -40,7 +40,7 @@ public class NewsCorpusProcessor {
       Map<StepType, Object> sink = pipeline.finish();
       if (sink.containsKey(StepType.INTERLINKER)) {
         VirtuosoClient vc = VirtuosoClient.getInstance();
-        vc.updateInterlinks((Map<String, String>) sink.get(StepType.INTERLINKER));
+        //vc.updateInterlinks((Map<String, String>) sink.get(StepType.INTERLINKER));        
       }
     } catch (IOException ioe) {
       ioe.printStackTrace();

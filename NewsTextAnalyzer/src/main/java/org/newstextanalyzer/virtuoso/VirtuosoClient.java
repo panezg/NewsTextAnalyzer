@@ -76,7 +76,8 @@ public class VirtuosoClient {
 
     // NOTE: Calculating the subject
     StringBuilder sbTemp = new StringBuilder();
-    sbTemp.append("<").append(URI).append(toCamelCaseURIReady(triple.getArgument1().toString(), true)).append(">");
+    String finalSubject = tripleWrapper.getSubjectReplacement() != null ? tripleWrapper.getSubjectReplacement().group().toString() : triple.getArgument1().toString();
+    sbTemp.append("<").append(URI).append(toCamelCaseURIReady(finalSubject, true)).append(">");
     String subject = sbTemp.toString();
 
     // NOTE: Calculating main predicate
@@ -137,7 +138,7 @@ public class VirtuosoClient {
       sb.append("m:strDate ").append("\"").append(tripleWrapper.getExtractedDate()).append("\" ; ");
     }
     // Ideification - predicate score
-    sb.append("m:confidenceScore ").append(tripleWrapper.getScore()).append(" ; ");
+    sb.append("m:confidenceScore ").append(tripleWrapper.getScoreAsString()).append(" ; ");
     // Ideification - predicate raw text
     sb.append("m:rawSubject ").append("\"").append(triple.getArgument1().toString()).append("\" ; ");
     // Ideification - predicate raw predicate

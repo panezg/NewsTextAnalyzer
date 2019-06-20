@@ -123,7 +123,7 @@ public class VirtuosoClientOld {
     }
     // Ideification - predicate score
     sb.append("<").append(fqPredicate).append("> ").append("<").append(URI).append("confidenceScore> ")
-        .append(tripleWrapper.getScore()).append(" . ")
+        .append(tripleWrapper.getScoreAsString()).append(" . ")
         // Ideification - predicate raw text
         .append("<").append(fqPredicate).append("> ").append("<").append(URI).append("rawSubject> ").append("\"")
         .append(triple.getArgument1().toString()).append("\" . ")

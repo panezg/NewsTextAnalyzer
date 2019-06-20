@@ -23,7 +23,7 @@ import edu.washington.cs.knowitall.nlp.extraction.ChunkedBinaryExtraction;
  *
  */
 public class ReVerbWrapper implements IPipelineStep {
-  public static double CONFIDENCE_THRESHOLD = 0.75;
+  public static final double CONFIDENCE_THRESHOLD = 0.75;
   
   private OpenNlpSentenceChunker chunker;
   private ReVerbExtractor reverb;
@@ -60,12 +60,12 @@ public class ReVerbWrapper implements IPipelineStep {
     List<TripleWrapper> triplesWrapper = new ArrayList<>();
     for (ChunkedBinaryExtraction triple : reverb.extract(sent)) {
       double conf = confFunc.getConf(triple);
-      if (conf >= CONFIDENCE_THRESHOLD) {
+      //if (conf >= CONFIDENCE_THRESHOLD) {
         // Prints out extractions from the sentence.
         // System.out.println("Conf=" + conf + "; Arg1=" + triple.getArgument1() + ";
         // Rel=" + triple.getRelation() + "; Arg2=" + triple.getArgument2());
         triplesWrapper.add(new TripleWrapper(triple, newsArticle, conf));
-      }
+      //}
     }
     return triplesWrapper;
   }

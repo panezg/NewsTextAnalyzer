@@ -18,6 +18,10 @@ public class VirtuosoPersistor implements IPipelineStep {
     @SuppressWarnings("unchecked")
     List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) extra[0];
     for (TripleWrapper tripleWrapper : triplesWrapper) {
+      // TODO: Find better location
+      if (tripleWrapper.getScore() < ReVerbWrapper.CONFIDENCE_THRESHOLD) {
+        continue;
+      }
       vc.saveTriple(tripleWrapper);
     }
     // TODO: Do check of repeated triples (s, p, o)

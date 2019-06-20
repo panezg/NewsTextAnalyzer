@@ -10,6 +10,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import java.util.Map;
 import org.apache.jena.query.QueryException;
 import org.newstextanalyzer.lookup.EntityLookupClient;
 import org.newstextanalyzer.lookup.EntityLookupClient2;
+import org.newstextanalyzer.lookup.EntityLookupClient3;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -26,13 +28,15 @@ public class InterLinker implements IPipelineStep {
   private Map<String, String> rawSubjectsInterlinked;
   private EntityLookupClient elc;
   private EntityLookupClient2 elc2;
+  private EntityLookupClient3 elc3;
   private Gson gson;
   
   public InterLinker() {
+    this.gson = new GsonBuilder().serializeNulls().create();
     loadInterlinkingMapping();
     this.elc = new EntityLookupClient();
     this.elc2 = new EntityLookupClient2();
-    this.gson = new GsonBuilder().serializeNulls().create();
+    this.elc3 = new EntityLookupClient3();
   }
   
   @Override
@@ -42,6 +46,11 @@ public class InterLinker implements IPipelineStep {
     // NOTE: Interlinking is a batch process that occurs post pipeline processing
     // but that requires inspection of each triple. See finish() method
     for (TripleWrapper tripleWrapper : triplesWrapper) {
+      // TODO: Find better location
+      if (tripleWrapper.getScore() < ReVerbWrapper.CONFIDENCE_THRESHOLD) {
+        continue;
+      }      
+      
       String rawSubject = tripleWrapper.getTriple().getArgument1().toString();
       if (!rawSubjectsInterlinked.containsKey(rawSubject)) {
         //String crossDBURI = elc.lookup(rawSubject);
@@ -67,7 +76,7 @@ public class InterLinker implements IPipelineStep {
       if (file.exists() && !file.isDirectory()) {
         BufferedReader bsr = new BufferedReader(new FileReader(file, Charset.forName("UTF-8")));
         Type typeOfT = new TypeToken<Map<String, String>>(){}.getType();
-        rawSubjectsInterlinked = new Gson().fromJson(bsr, typeOfT);
+        rawSubjectsInterlinked = gson.fromJson(bsr, typeOfT);
       } else {
         rawSubjectsInterlinked = new HashMap<>();
       }
@@ -93,12 +102,26 @@ public class InterLinker implements IPipelineStep {
   @Override
   public void finish(Map<StepType, Object> sink) {
     System.out.println("Valid interlinked raw subjects in map: " + rawSubjectsInterlinked.size());
+    elc3.run(rawSubjectsInterlinked);
     saveInterlinkingMapping();
     sink.put(this.getStepType(), rawSubjectsInterlinked);
+  }
+  
+  public void test() {
+    elc3.run(rawSubjectsInterlinked);
+    saveInterlinkingMapping();
+//    elc3.run(null);
   }
 
   @Override
   public StepType getStepType() {
     return StepType.INTERLINKER;
+  }
+  
+  public static void main(String[] args) {
+    System.out.println(new Date());
+    InterLinker il = new InterLinker();
+    il.test();
+    System.out.println(new Date());
   }
 }

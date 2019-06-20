@@ -32,12 +32,13 @@ public class EntityLookupClient2 {
   public String lookup(String rawSubject) {
     //String s = "SELECT * WHERE { ?s ?p ?o . } LIMIT 100";
     count++;
-    if (count % 25 == 0) {
+    if (count % 100 == 0) {
       System.out.println(count);
     }
     StringBuilder sb = new StringBuilder();
     rawSubject = rawSubject.replaceAll("[\\[\\]()\\']", "");
-    
+    return null;
+    /*
     sb.append("PREFIX dbo: <http://dbpedia.org/ontology/> ");
     sb.append("PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ");
     sb.append("SELECT * WHERE { ");
@@ -47,6 +48,7 @@ public class EntityLookupClient2 {
     //sb.append("?s a <http://dbpedia.org/class/yago/Politician110450303> . ");
     sb.append("FILTER (regex(str(?l), \"" + rawSubject + "\")) ");
     sb.append("}");
+    */
     
     /*
     sb.append("PREFIX dbo: <http://dbpedia.org/ontology/> ");
@@ -62,6 +64,8 @@ public class EntityLookupClient2 {
     sb.append("ORDER BY DESC(?c)");
     */
     //System.out.println(sb.toString());
+    
+    /*
     try {
       
       Query query = QueryFactory.create(sb.toString());
@@ -84,7 +88,7 @@ public class EntityLookupClient2 {
       System.out.println("Current Query: " + sb.toString());
       throw qe;
     }
-    return null;
+    return null;*/
   }
   
   /*
