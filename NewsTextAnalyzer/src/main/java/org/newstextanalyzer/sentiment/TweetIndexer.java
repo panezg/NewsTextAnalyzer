@@ -6,15 +6,16 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.newstextanalyzer.Const;
+
 import com.google.gson.Gson;
 
 public class TweetIndexer {
-  // public final static String TWEETS_DIRECTORY_PATH =
-  // "/Users/gpanez/Documents/tweets/BBCPolitics";
+  // NOTE: Directory path that contains the folders with the tweets
   public final static String TWEETS_DIRECTORY_PATH = "/Users/gpanez/Documents/tweets/GdnPolitics";
 
   private static TweetIndexer instance = null;
-  private LuceneClient lc;
+  private TweetLookup tl;
 
   public static TweetIndexer getInstance() {
     if (instance == null) {
@@ -24,12 +25,12 @@ public class TweetIndexer {
   }
 
   private TweetIndexer() {
-    this.lc = LuceneClient.getInstance();
+    this.tl = TweetLookup.getInstance();
   }
 
   public void buildIndex() {
     try {
-      lc.initWriter();
+      tl.initWriter();
       File dir = new File(TWEETS_DIRECTORY_PATH);
       if (dir.exists() && dir.isDirectory()) {
         File[] subDirs = dir.listFiles();
@@ -44,11 +45,11 @@ public class TweetIndexer {
               }
               Gson gson = new Gson();
               Tweet tweet = gson.fromJson(new BufferedReader(new FileReader(tweetFile)), Tweet.class);
-              lc.indexTweet(tweet, subDir.getName());
+              tl.indexTweet(tweet, subDir.getName());
             }
           }
         }
-        lc.closeWriter();
+        tl.closeWriter();
       }
     } catch (IOException e) {
       e.printStackTrace();

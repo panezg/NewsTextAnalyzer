@@ -37,7 +37,7 @@ public class SentimentEnricher {
     // int matchesToTriple = 0;
     while (results.hasNext()) {
       count++;
-      if (count % 100 == 0) {
+      if (count % 1000 == 0) {
         System.out.println("count:" + count);
       }
 
@@ -51,17 +51,19 @@ public class SentimentEnricher {
       RDFNode tl = qs.get("tl");
       // NOTE: hs = hasSource, or TGN URL
       // RDFNode hs = qs.get("hs");
-      RDFNode xd = qs.get("xd");
+      RDFNode xsd = qs.get("xsd");
       // System.out.println(hs.toString());
 
       try {
-        Date date = new SimpleDateFormat("yyyy-MM-dd").parse(xd.toString().split("^^")[0]);
+        Date date = new SimpleDateFormat("yyyy-MM-dd").parse(xsd.toString().split("^^")[0]);
         List<Tweet> tweets = ts.search(rs.toString(), rp.toString(), ro.toString(), tl.toString(), date);
-        if (tweets.size() > 0) {
+        if (tweets != null && tweets.size() > 0) {
           Tweet tweet = tweets.get(0);
           // System.out.println(tweet.getId());
           // matchesToTriple++;
           vc.updateWithTweetInfo(p, tweet);
+        } else {
+          vc.deleteTweetInfo(p);
         }
       } catch (ParseException e) {
         e.printStackTrace();

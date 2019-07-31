@@ -11,7 +11,7 @@ public class NLPAnalysis {
   protected void analyze(List<String> words) {
     try {
       BasicPipeline bp = new BasicPipeline();
-      File dir = new File(App.TGN_DIRECTORY_PATH);
+      File dir = new File(Const.TGN_DIRECTORY_PATH);
       if (dir.exists() && dir.isDirectory()) {
         File[] subDirs = dir.listFiles();
         Arrays.sort(subDirs);
@@ -37,7 +37,7 @@ public class NLPAnalysis {
   protected void findInterestingSentences(List<String> words, String[] years) {
     try {
       InterestingSentencesPipeline isp = new InterestingSentencesPipeline();
-      File dir = new File(App.TGN_DIRECTORY_PATH);
+      File dir = new File(Const.TGN_DIRECTORY_PATH);
       if (dir.exists() && dir.isDirectory()) {
         File[] subDirs = dir.listFiles();
         Arrays.sort(subDirs);

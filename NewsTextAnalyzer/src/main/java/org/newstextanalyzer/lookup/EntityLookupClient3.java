@@ -1,10 +1,9 @@
 package org.newstextanalyzer.lookup;
 
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryException;
@@ -34,7 +33,7 @@ public class EntityLookupClient3 {
     return instance;
   }
 
-  public void run(Map<String, String> rawSubjectsInterlinked) {
+  public void run(Set<String> rawSubjectsPendingInterlinkingAttempt, Map<String, String> rawSubjectsInterlinked) {
     int n = 8;
     
     //Map<String, String> rawSubjectsInterlinked = new HashMap<>();
@@ -58,11 +57,11 @@ public class EntityLookupClient3 {
     rawSubjectsInterlinked.put("Unilever , AA and Cineworld", null);
     */
     
-    int partition = rawSubjectsInterlinked.size() / n;
+    int partition = rawSubjectsPendingInterlinkingAttempt.size() / n;
     
     Retriever[] retrievers = new Retriever[n];
     List<String> keys = new ArrayList<>();
-    for (String key : rawSubjectsInterlinked.keySet()) {
+    for (String key : rawSubjectsPendingInterlinkingAttempt) {
       keys.add(key);
     }
     
@@ -70,11 +69,12 @@ public class EntityLookupClient3 {
     int end = 0;
     for (int i = 0; i < n; i++) {
       if (i == n - 1) {
-        end = rawSubjectsInterlinked.size();
+        end = rawSubjectsPendingInterlinkingAttempt.size();
       }
       else {
         end = start + partition;
       }
+      System.out.println("start, end: " + start + ", " + end);
       retrievers[i] = new Retriever("Retriever" + i, keys, rawSubjectsInterlinked, start, end);
       start += partition;
     }
@@ -119,9 +119,7 @@ class Retriever extends Thread implements Runnable {
         System.out.println("Thread " + name + " count: " + count);
       }
       String resource = lookup(keys.get(i));
-      if (resource != null) {
-        map.put(keys.get(i), resource);
-      }
+      map.put(keys.get(i), resource);
     }
   }
   

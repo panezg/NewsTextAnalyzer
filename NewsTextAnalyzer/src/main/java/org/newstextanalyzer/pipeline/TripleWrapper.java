@@ -1,5 +1,9 @@
 package org.newstextanalyzer.pipeline;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import org.newstextanalyzer.NewsArticle;
 
 import edu.stanford.nlp.ling.tokensregex.SequenceMatchResult;
@@ -11,22 +15,44 @@ import edu.washington.cs.knowitall.nlp.extraction.ChunkedBinaryExtraction;
  *
  */
 public class TripleWrapper {
+  static SimpleDateFormat dateTimeComplexFormatter;
+  static SimpleDateFormat dateSimpleFormatter;
+  
   private ChunkedBinaryExtraction triple;
   private boolean objectMatched;
+  private boolean subjectOnlyPerson;
   private NewsArticle newsArticle;
   private double score;
   private String extractedDate;
   private String extractedLocation;
+  private Date sourceDate;
+
   // NOTE: For convenience using StanfordNLP object
   private SequenceMatchResult<CoreMap> subjectPersonAbout;
   private SequenceMatchResult<CoreMap> subjectReplacement;
+  
+  static {
+    dateTimeComplexFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    dateSimpleFormatter = new SimpleDateFormat("yyyy-MM-dd");
+  }
 
   public TripleWrapper(ChunkedBinaryExtraction triple, NewsArticle newsArticle, double score) {
     this.triple = triple;
     this.objectMatched = false;
+    this.subjectOnlyPerson = false;
     this.newsArticle = newsArticle;
     this.score = score;
     this.extractedLocation = null;
+
+    Date referenceDate;
+    try {
+      referenceDate = dateTimeComplexFormatter.parse(newsArticle.getTime());
+      this.sourceDate = referenceDate;
+    } catch(ParseException pe) {
+      pe.printStackTrace();
+      throw new RuntimeException();
+    }
+
   }
 
   public ChunkedBinaryExtraction getTriple() {
@@ -63,6 +89,18 @@ public class TripleWrapper {
   public NewsArticle getNewsArticle() {
     return newsArticle;
   }
+  
+  public Date getSourceDate() {
+    return sourceDate;
+  }
+  
+  public String getSourceDateAsString() {
+    return dateSimpleFormatter.format(this.sourceDate);
+  }
+
+  public void setSourceDate(Date sourceDate) {
+    this.sourceDate = sourceDate;
+  }
 
   public void setExtractedDate(String extractedDate) {
     this.extractedDate = extractedDate;
@@ -75,7 +113,15 @@ public class TripleWrapper {
   public void setObjectMatched(boolean objectMatched) {
     this.objectMatched = objectMatched;
   }
-
+  
+  public void setSubjectOnlyPerson(boolean subjectOnlyPerson) {
+    this.subjectOnlyPerson = subjectOnlyPerson;
+  }
+  
+  public boolean isSubjectOnlyPerson() {
+    return this.subjectOnlyPerson;
+  }  
+  
   public boolean isObjectMatched() {
     return objectMatched;
   }

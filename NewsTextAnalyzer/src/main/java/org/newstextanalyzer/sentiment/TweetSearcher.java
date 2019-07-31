@@ -10,7 +10,7 @@ public class TweetSearcher {
   private static final int MIN_TWEET_REPLY_COUNT = 0;
 
   private static TweetSearcher instance = null;
-  private LuceneClient lc;
+  private TweetLookup lc;
 
   public static TweetSearcher getInstance() {
     if (instance == null) {
@@ -20,7 +20,7 @@ public class TweetSearcher {
   }
 
   private TweetSearcher() {
-    this.lc = LuceneClient.getInstance();
+    this.lc = TweetLookup.getInstance();
     lc.initSearcher();
   }
 

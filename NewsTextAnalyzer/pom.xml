@@ -6,7 +6,8 @@
 	<groupId>org.newstextanalyzer</groupId>
 	<artifactId>NewsTextAnalyzer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<packaging>jar</packaging>
+	<!--<packaging>jar</packaging>-->
+	<packaging>war</packaging>
 
 	<name>NewsTextAnalyzer</name>
 	<url>http://maven.apache.org</url>
@@ -141,5 +142,30 @@
       <artifactId>commons-io</artifactId>
       <version>2.6</version>
     </dependency>
+
+    <!-- https://mvnrepository.com/artifact/javax.servlet/javax.servlet-api -->
+		<dependency>
+	    <groupId>javax.servlet</groupId>
+	    <artifactId>javax.servlet-api</artifactId>
+	    <version>3.1.0</version>
+	    <scope>provided</scope>
+		</dependency>
 	</dependencies>
+
+	<build>
+		<finalName>SampleServlet</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.tomcat.maven</groupId>
+        <artifactId>tomcat7-maven-plugin</artifactId>
+        <version>2.2</version>
+        <configuration> 
+					<url>http://localhost:8080/manager/text</url>
+					<server>TomcatServer</server>
+					<path>/myapp</path>
+				</configuration> 
+      </plugin>
+	  </plugins>
+
+  </build>
 </project>

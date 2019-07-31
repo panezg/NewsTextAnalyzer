@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.newstextanalyzer.NewsArticle;
-import org.newstextanalyzer.pipeline.IPipelineStep.StepType;
 
 import edu.washington.cs.knowitall.extractor.ReVerbExtractor;
 import edu.washington.cs.knowitall.extractor.conf.ConfidenceFunction;
@@ -14,26 +13,36 @@ import edu.washington.cs.knowitall.extractor.conf.ReVerbOpenNlpConfFunction;
 import edu.washington.cs.knowitall.nlp.ChunkedSentence;
 import edu.washington.cs.knowitall.nlp.OpenNlpSentenceChunker;
 import edu.washington.cs.knowitall.nlp.extraction.ChunkedBinaryExtraction;
+import edu.washington.cs.knowitall.util.DefaultObjects;
+import opennlp.tools.chunker.Chunker;
+import opennlp.tools.postag.POSTagger;
+import opennlp.tools.tokenize.Tokenizer;
 
 /**
- * Leverages ReVerb and OpenNLP libs to extract triples from a sentence
- * Triples with confidence levels less than threshold are discarded 
+ * Leverages ReVerb and OpenNLP libs to extract triples from a sentence Triples
+ * with confidence levels less than threshold are discarded
  * 
  * @author gpanez
  *
  */
-public class ReVerbWrapper implements IPipelineStep {
+public class ReVerbOIE implements IPipelineStep {
   public static final double CONFIDENCE_THRESHOLD = 0.75;
-  
-  private OpenNlpSentenceChunker chunker;
+
+  private OpenNlpSentenceChunker enhancedChunker;
+  private Tokenizer tokenizer;
+  private POSTagger posTagger;
+  private Chunker chunker;
   private ReVerbExtractor reverb;
   private ConfidenceFunction confFunc;
 
-  public ReVerbWrapper() {
+  public ReVerbOIE() {
     // NOTE: OpenNLP looks on the classpath for the default model files related
     // to chunker
     try {
-      this.chunker = new OpenNlpSentenceChunker();
+      this.tokenizer = DefaultObjects.getDefaultTokenizer();
+      this.posTagger = DefaultObjects.getDefaultPosTagger();
+      this.chunker = DefaultObjects.getDefaultChunker();
+      this.enhancedChunker = new OpenNlpSentenceChunker(tokenizer, posTagger, chunker);
       this.reverb = new ReVerbExtractor();
       this.confFunc = new ReVerbOpenNlpConfFunction();
     } catch (IOException ioe) {
@@ -45,7 +54,9 @@ public class ReVerbWrapper implements IPipelineStep {
   @Override
   public Object execute(String sentence, Object... extra) {
     NewsArticle newsArticle = (NewsArticle) extra[0];
-    ChunkedSentence sent = chunker.chunkSentence(sentence);
+    //NewsArticle newsArticle = null;
+    
+    ChunkedSentence sent = enhancedChunker.chunkSentence(sentence);
 
     // System.out.println(text);
     // for (int i = 0; i < sent.getLength(); i++) {
@@ -54,18 +65,30 @@ public class ReVerbWrapper implements IPipelineStep {
     // String chunkTag = sent.getChunkTag(i);
     // System.out.println(token + " " + posTag + " " + chunkTag);
     // }
-    
+
     // NOTE: ChunkedBinaryExtraction object includes getSentence() method
-    //List<ChunkedBinaryExtraction> triples = new ArrayList<>();
+    // List<ChunkedBinaryExtraction> triples = new ArrayList<>();
     List<TripleWrapper> triplesWrapper = new ArrayList<>();
     for (ChunkedBinaryExtraction triple : reverb.extract(sent)) {
       double conf = confFunc.getConf(triple);
-      //if (conf >= CONFIDENCE_THRESHOLD) {
+      //System.out.println(sent.getChunkTagsAsString());
+      //System.out.println(sent.getPosTagsAsString());
+      //System.out.println(triple);
+      if (conf >= CONFIDENCE_THRESHOLD) {
         // Prints out extractions from the sentence.
-        // System.out.println("Conf=" + conf + "; Arg1=" + triple.getArgument1() + ";
         // Rel=" + triple.getRelation() + "; Arg2=" + triple.getArgument2());
-        triplesWrapper.add(new TripleWrapper(triple, newsArticle, conf));
-      //}
+        List<String> subjectPOSTags = triple.getArgument1().getPosTags();
+        List<String> subjectChunkTags = triple.getArgument1().getChunkTags();
+        // https://www.tutorialkart.com/opennlp/chunker-example-in-apache-opennlp/
+        if (subjectChunkTags.contains("B-NP") && subjectPOSTags.contains("NNP")) {
+          //System.out.println("adding Triple");
+          //System.out.println("Conf=" + conf + "; Arg1=" + triple.getArgument1());
+          triplesWrapper.add(new TripleWrapper(triple, newsArticle, conf));
+        }
+      }
+      // System.out.println(triple);
+      // System.out.println(triple.getPosTags());
+      // System.out.println(triple.getChunkTags().toString());
     }
     return triplesWrapper;
   }
@@ -79,4 +102,10 @@ public class ReVerbWrapper implements IPipelineStep {
   public void finish(Map<StepType, Object> sink) {
     return;
   }
+  /*
+  public static void main(String[] args) {
+    String sentence = "Robert Mueller did not exonerate Donald Trump.";
+    ReVerbOIE r = new ReVerbOIE();
+    r.execute(sentence, null);
+  }*/
 }

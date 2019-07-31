@@ -3,21 +3,20 @@ package org.newstextanalyzer;
 import java.io.IOException;
 import java.util.Date;
 
+import org.newstextanalyzer.lookup.DBpediaScrapper;
 import org.newstextanalyzer.pipeline.EntityValidator;
 import org.newstextanalyzer.pipeline.IPipelineStep;
 import org.newstextanalyzer.pipeline.InterLinker;
-import org.newstextanalyzer.pipeline.Pipeline;
-import org.newstextanalyzer.pipeline.ReVerbWrapper;
+import org.newstextanalyzer.pipeline.PipelineManager;
+import org.newstextanalyzer.pipeline.ReVerbOIE;
+import org.newstextanalyzer.pipeline.Referencer;
 import org.newstextanalyzer.pipeline.SimpleClassifier;
-import org.newstextanalyzer.pipeline.SimpleLinker;
+import org.newstextanalyzer.pipeline.IntraLinker;
 import org.newstextanalyzer.pipeline.VirtuosoPersistor;
 import org.newstextanalyzer.sentiment.SentimentEnricher;
 import org.newstextanalyzer.sentiment.TweetIndexer;
 
 public class App {
-  // NOTE: Directory path that contains the folders with the news articles in
-  // simple format
-  public final static String TGN_DIRECTORY_PATH = "/Users/gpanez/Documents/news/the_guardian_preprocessed";
 
   public static void main(String[] args) throws IOException {
     System.out.println("Start: " + new Date());
@@ -26,7 +25,17 @@ public class App {
     TweetIndexer.getInstance().buildIndex();
 
     // TODO: The duration aspect from - to
+    // NOTE: arguments for Run Config
+    //"scrap"
+    //"process" "enrich"
     if (args != null) {
+      if (args.length == 1 && args[0] != null && args[0].equals("scrap")) {
+        System.out.println("Scrapping DBpedia and DBpedia Live for people entities");
+        System.out.println("------------");
+        DBpediaScrapper scrapper = DBpediaScrapper.getInstance();
+        scrapper.run();
+        scrapper.finalize();
+      }
       if (args.length >= 1 && args[0] != null && args[0].equals("process")) {
         System.out.println("Processing news articles through pipeline");
         System.out.println("------------");
@@ -37,18 +46,20 @@ public class App {
             "2015", "2016", "2017", "2018", "2019" };
         
         new NewsCorpusProcessor().processThroughPipeline(
-            new Pipeline(
+            new PipelineManager(
                 new IPipelineStep[] { 
                     new SimpleClassifier(),
-                    new ReVerbWrapper(), 
+                    new Referencer(),
+                    new ReVerbOIE(), 
                     new EntityValidator(), 
-                    new SimpleLinker(), 
+                    new IntraLinker(), 
                     new InterLinker(),
                     new VirtuosoPersistor() 
                 }
             ),
-            TGN_DIRECTORY_PATH,
-            new String[] { "2019" }
+            Const.TGN_DIRECTORY_PATH,
+            //new String[] { "2019" }
+            years
         );
       }
       if (args.length >= 2 && args[1] != null && args[1].equals("enrich")) {

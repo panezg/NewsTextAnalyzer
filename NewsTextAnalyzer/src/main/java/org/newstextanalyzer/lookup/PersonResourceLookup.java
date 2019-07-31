@@ -1,8 +1,9 @@
-package org.newstextanalyzer.sentiment;
+package org.newstextanalyzer.lookup;
 
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -24,28 +25,23 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
-public class LuceneClient {
+public class PersonResourceLookup {
   // Limit the number of search results we get
   private static final int MAX_RESULTS = 10;
-  private static final String TWEET_INDEX_DIRECTORY_PATH = "/Users/gpanez/Documents/tweets/index";
+  private static final String PERSON_DBPEDIA_INDEX_DIRECTORY_PATH = "/Users/gpanez/Documents/lookup/index";
 
-  private static final String SCREEN_NAME = "SCREEN_NAME";
-  private static final String ID = "ID";
-  private static final String ID_STR = "ID_STR";
-  private static final String URL = "URL";
-  private static final String FULL_TEXT = "FULL_TEXT";
-  private static final String CREATED_AT = "CREATED_AT";
-  private static final String REPLY_COUNT = "REPLY_COUNT";
-  private static final String AVG_SENTIMENT_SCORE = "AVG_SENTIMENT_SCORE";
+  private static final String RESOURCE_NAME = "RESOURCE_NAME";
+  private static final String LABEL = "LABEL";
+  private static final String BIRTH_DATE = "BIRTH_DATE";
+  private static final String TYPE_COUNT = "TYPE_COUNT";
 
-  private static LuceneClient instance = null;
+  private static PersonResourceLookup instance = null;
 
   private Analyzer analyzer;
   private Similarity similarity;
@@ -53,14 +49,14 @@ public class LuceneClient {
   private IndexWriter iwriter;
   private IndexSearcher isearcher;
 
-  public static LuceneClient getInstance() {
+  public static PersonResourceLookup getInstance() {
     if (instance == null) {
-      instance = new LuceneClient();
+      instance = new PersonResourceLookup();
     }
     return instance;
   }
 
-  private LuceneClient() {
+  private PersonResourceLookup() {
     try {
       int indexAnalyzer = 0, indexSimilarity = 0;
 
@@ -89,7 +85,7 @@ public class LuceneClient {
 
       // To store an index in memory
       // Directory directory = new RAMDirectory();
-      directory = FSDirectory.open(Paths.get(TWEET_INDEX_DIRECTORY_PATH));
+      directory = FSDirectory.open(Paths.get(PERSON_DBPEDIA_INDEX_DIRECTORY_PATH));
     } catch (IOException ioe) {
       ioe.printStackTrace();
       throw new RuntimeException();
@@ -111,24 +107,28 @@ public class LuceneClient {
     }
   }
 
-  public void indexTweet(Tweet tweet, String dateStr) {
+  public void indexRecord(Record record) {
     try {
       Document doc = new Document();
-      doc.add(new StoredField(SCREEN_NAME, tweet.getScreenName()));
-      doc.add(new StoredField(ID, tweet.getId()));
-      doc.add(new StoredField(ID_STR, tweet.getIdStr()));
-      doc.add(new StoredField(URL, tweet.getURL()));
-      doc.add(new TextField(FULL_TEXT, tweet.getFullText(), Field.Store.YES));
-      doc.add(new TextField(CREATED_AT, dateStr, Field.Store.YES));
-      doc.add(new IntPoint(REPLY_COUNT, tweet.getReplyCount()));
-      doc.add(new StoredField(AVG_SENTIMENT_SCORE, tweet.getAvgSentimentScore()));
+      doc.add(new StoredField(RESOURCE_NAME, record.getResourceName()));
+      doc.add(new TextField(LABEL, record.getLabel(), Field.Store.YES));      
+      if (record.getBirthDate() != null) {
+        doc.add(new StoredField(BIRTH_DATE, record.getBirthDate()));
+      }
+      else {
+        doc.add(new StoredField(BIRTH_DATE, "null"));
+      }
+      doc.add(new IntPoint(TYPE_COUNT, record.getTypeCount()));
+      //doc.add(new TextField(FULL_TEXT, tweet.getFullText(), Field.Store.YES));
+      //doc.add(new TextField(CREATED_AT, dateStr, Field.Store.YES));
+      //doc.add(new IntPoint(REPLY_COUNT, tweet.getReplyCount()));
+      //doc.add(new StoredField(AVG_SENTIMENT_SCORE, tweet.getAvgSentimentScore()));
       // NOTE: Required for point fields to be returned
-      doc.add(new StoredField(REPLY_COUNT, tweet.getReplyCount()));
+      doc.add(new StoredField(TYPE_COUNT, record.getTypeCount()));
 
       // date: [2010-10-4T00:00:00 TO 2010-10-4T23:59:59]
       // created_date:["2015-08-16 07:38:00" TO "2015-08-27 07:38:02"]
       iwriter.addDocument(doc);
-
     } catch (IOException e) {
       e.printStackTrace();
       throw new RuntimeException();
@@ -161,8 +161,7 @@ public class LuceneClient {
     }
   }
 
-  public List<Tweet> searchTweets(String rawSubject, String rawPredicate, String rawObject, String textToSearch,
-      String fromDate, String toDate, int minReplyCount) {
+  public List<Record> searchRecords(String label, Date referenceDate) {
     try {
       // BooleanQuery.Builder builder = new BooleanQuery.Builder();
       // builder.add(new TermQuery(new Term("contents", "java")), true, false);
@@ -173,51 +172,62 @@ public class LuceneClient {
       // Query and subclasses behave as expected with .equals
       // assertEquals(qpQuery, apiQuery);
 
-      QueryParser parser = new QueryParser(FULL_TEXT, analyzer);
+      QueryParser parser = new QueryParser(LABEL, analyzer);
       // Query query = parser.parse(textToSearch.replace("?","\\?"));
 
       // Query textQuery = parser.parse(QueryParser.escape(textToSearch.trim()));
-      Query rawSubjectQuery = parser.parse(QueryParser.escape(rawSubject.trim()));
-      Query rawPredicateQuery = parser.parse(QueryParser.escape(rawPredicate.trim()));
-      Query rawObjectQuery = parser.parse(QueryParser.escape(rawObject.trim()));
 
-      TermRangeQuery dateQuery = TermRangeQuery.newStringRange(CREATED_AT, fromDate, toDate, true, true);
-
-      Query replyQuery = IntPoint.newRangeQuery(REPLY_COUNT, minReplyCount, Integer.MAX_VALUE);
+      // NOTE: Required to match all words of the label to search, when not doing phrase query search
+      parser.setDefaultOperator(QueryParser.Operator.AND);
+      
+      // NOTE: Tried many ways to create the PhraseQuery. Using the API, e.g., PhraseQuery.Builder
+      // is a problem because each word needs to be added independently
+      // If the entire phrase is added, no preprocessing is done (lowercase, etc), and nothing gets matched
+      // If word by word is added, it works, given that you add the correct word, but not sure
+      // which would be the best way to get the words from the search string
+      // Using the query parser achieves both. It tokenizes and preprocesses, so you can just pass the search tring
+      // and provides a phrase query. Achieved by adding the quotes
+      
+      Query labelQuery = null;
+      try {
+        labelQuery = parser.parse("\"" + QueryParser.escape(label.trim()) + "\"");
+      } catch (ParseException pe) {
+        pe.printStackTrace();
+      }
+      //String toDate = referenceDate;
+      //TermRangeQuery dateQuery = TermRangeQuery.newStringRange(BIRTH_DATE, fromDate, toDate, true, true);
 
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      // builder.add(textQuery, BooleanClause.Occur.MUST);
-      builder.add(rawSubjectQuery, BooleanClause.Occur.MUST);
-      builder.add(rawPredicateQuery, BooleanClause.Occur.MUST);
-      builder.add(rawObjectQuery, BooleanClause.Occur.SHOULD);
-      builder.add(dateQuery, BooleanClause.Occur.MUST);
-      builder.add(replyQuery, BooleanClause.Occur.FILTER);
+      //builder.add(labelQuery, BooleanClause.Occur.SHOULD);
+      builder.add(labelQuery, BooleanClause.Occur.SHOULD);
+      //builder.add(rawPredicateQuery, BooleanClause.Occur.MUST);
+      //builder.add(rawObjectQuery, BooleanClause.Occur.SHOULD);
+      //builder.add(dateQuery, BooleanClause.Occur.MUST);
+      //builder.add(replyQuery, BooleanClause.Occur.FILTER);
       BooleanQuery bq = builder.build();
       //System.out.println(bq.toString());
 
       // Get the set of results
       ScoreDoc[] hits = isearcher.search(bq, MAX_RESULTS).scoreDocs;
 
-      List<Tweet> tweets = new ArrayList<>();
-
+      List<Record> records = new ArrayList<>();
+      
       for (int i = 0; i < hits.length; i++) {
         Document hitDoc = isearcher.doc(hits[i].doc);
         // System.out.println("Documents: " + hits[i]);
-        Tweet tweet = new Tweet();
-        tweet.setScreenName(hitDoc.get(SCREEN_NAME));
-        tweet.setId(Long.valueOf(hitDoc.get(ID)));
-        tweet.setIdStr(hitDoc.get(ID_STR));
-        tweet.setURL(hitDoc.get(URL));
-        tweet.setFullText(hitDoc.get(FULL_TEXT));
-        tweet.setCreatedAt(hitDoc.get(CREATED_AT));
-        tweet.setReplyCount(Integer.valueOf(hitDoc.get(REPLY_COUNT)));
-        tweet.setAvgSentimentScore(Double.valueOf(hitDoc.get(AVG_SENTIMENT_SCORE)));
-        tweets.add(tweet);
+        if (hitDoc.get(BIRTH_DATE).contains("^")) {
+          continue;
+        }
+        Record record = new Record(hitDoc.get(RESOURCE_NAME), 
+            hitDoc.get(LABEL), 
+            hitDoc.get(BIRTH_DATE),
+            Integer.valueOf(hitDoc.get(TYPE_COUNT)));
+        records.add(record);
       }
-      return tweets;
-    } catch (ParseException e) {
-      e.printStackTrace();
-      throw new RuntimeException();
+      return records;
+    //} catch (ParseException e) {
+    //  e.printStackTrace();
+    //  throw new RuntimeException();
     } catch (IOException e) {
       e.printStackTrace();
       throw new RuntimeException();

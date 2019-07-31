@@ -10,15 +10,17 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
-import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.jena.query.QueryException;
 import org.newstextanalyzer.lookup.EntityLookupClient;
 import org.newstextanalyzer.lookup.EntityLookupClient2;
 import org.newstextanalyzer.lookup.EntityLookupClient3;
+import org.newstextanalyzer.lookup.EntitySearcher;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -26,17 +28,21 @@ import com.google.gson.reflect.TypeToken;
 
 public class InterLinker implements IPipelineStep {
   private Map<String, String> rawSubjectsInterlinked;
+  private Set<String> rawSubjectsPendingInterlinkingAttempt;
   private EntityLookupClient elc;
   private EntityLookupClient2 elc2;
   private EntityLookupClient3 elc3;
+  private EntitySearcher entitySearcher;
   private Gson gson;
   
   public InterLinker() {
     this.gson = new GsonBuilder().serializeNulls().create();
     loadInterlinkingMapping();
+    this.rawSubjectsPendingInterlinkingAttempt = new HashSet<>();
     this.elc = new EntityLookupClient();
     this.elc2 = new EntityLookupClient2();
     this.elc3 = new EntityLookupClient3();
+    this.entitySearcher = EntitySearcher.getInstance();
   }
   
   @Override
@@ -47,23 +53,36 @@ public class InterLinker implements IPipelineStep {
     // but that requires inspection of each triple. See finish() method
     for (TripleWrapper tripleWrapper : triplesWrapper) {
       // TODO: Find better location
-      if (tripleWrapper.getScore() < ReVerbWrapper.CONFIDENCE_THRESHOLD) {
+      if (tripleWrapper.getScore() < ReVerbOIE.CONFIDENCE_THRESHOLD) {
         continue;
-      }      
-      
-      String rawSubject = tripleWrapper.getTriple().getArgument1().toString();
-      if (!rawSubjectsInterlinked.containsKey(rawSubject)) {
-        //String crossDBURI = elc.lookup(rawSubject);
-        try {
-          String crossDBURI = elc2.lookup(rawSubject);
-          // NOTE: Adding even looks ups that resulted in no match to prevent repetitions
-          // of those subjects from issuing more requests
-          rawSubjectsInterlinked.put(rawSubject, crossDBURI);
+      }
+      // NOTE: Only interlink people
+      if (tripleWrapper.isSubjectOnlyPerson()) {
+        if (tripleWrapper.getSubjectReplacement() != null) {
+          if (!rawSubjectsInterlinked.containsKey(tripleWrapper.getSubjectReplacement().group())) {
+            rawSubjectsPendingInterlinkingAttempt.add(tripleWrapper.getSubjectReplacement().group());
+          }
         }
-        catch (QueryException qe) {
-          // NOTE: shouldn't reach this  code
-          saveInterlinkingMapping();
-          throw new RuntimeException();
+        else {
+          // NOTE: Only interlink relatively safe names, that are at least 2 words long
+          if (tripleWrapper.getTriple().getArgument1().getLength() > 1) {
+            String rawSubject = tripleWrapper.getTriple().getArgument1().toString();
+            if (!rawSubjectsInterlinked.containsKey(rawSubject)) {
+              //String crossDBURI = elc.lookup(rawSubject);
+              try {
+                //String crossDBURI = elc2.lookup(rawSubject);
+                // NOTE: Adding even looks ups that resulted in no match to prevent repetitions
+                // of those subjects from issuing more requests
+                // rawSubjectsInterlinked.put(rawSubject, crossDBURI);
+                rawSubjectsPendingInterlinkingAttempt.add(rawSubject);
+              }
+              catch (QueryException qe) {
+                // NOTE: shouldn't reach this  code
+                saveInterlinkingMapping();
+                throw new RuntimeException();
+              }
+            }
+          }
         }
       }
     }
@@ -102,13 +121,14 @@ public class InterLinker implements IPipelineStep {
   @Override
   public void finish(Map<StepType, Object> sink) {
     System.out.println("Valid interlinked raw subjects in map: " + rawSubjectsInterlinked.size());
-    elc3.run(rawSubjectsInterlinked);
+    //elc3.run(rawSubjectsPendingInterlinkingAttempt, rawSubjectsInterlinked);
+    entitySearcher.run(rawSubjectsPendingInterlinkingAttempt, rawSubjectsInterlinked);
+    
     saveInterlinkingMapping();
     sink.put(this.getStepType(), rawSubjectsInterlinked);
   }
   
   public void test() {
-    elc3.run(rawSubjectsInterlinked);
     saveInterlinkingMapping();
 //    elc3.run(null);
   }
@@ -117,11 +137,11 @@ public class InterLinker implements IPipelineStep {
   public StepType getStepType() {
     return StepType.INTERLINKER;
   }
-  
+  /*
   public static void main(String[] args) {
     System.out.println(new Date());
     InterLinker il = new InterLinker();
     il.test();
     System.out.println(new Date());
-  }
+  }*/
 }

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>KB Query Demo</title>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        function onQueryTypeChange() {
+            if (document.getElementById("queryTypeSelector").value === "PERSON") {
+                document.getElementById("specificPersonForm").style.display = "block";
+                document.getElementById("specificRoleForm").style.display = "none";
+                document.getElementById("specificEventForm").style.display = "none";
+                document.getElementById("specificSubjectForm").style.display = "none";
+                document.getElementById("specificSentimentForm").style.display = "none";
+            } else if (document.getElementById("queryTypeSelector").value === "ROLE") {
+                document.getElementById("specificPersonForm").style.display = "none";
+                document.getElementById("specificRoleForm").style.display = "block";
+                document.getElementById("specificEventForm").style.display = "none";
+                document.getElementById("specificSubjectForm").style.display = "none";
+                document.getElementById("specificSentimentForm").style.display = "none";
+            } else if (document.getElementById("queryTypeSelector").value === "EVENT") {
+                document.getElementById("specificPersonForm").style.display = "none";
+                document.getElementById("specificRoleForm").style.display = "none";
+                document.getElementById("specificEventForm").style.display = "block";
+                document.getElementById("specificSubjectForm").style.display = "none";
+                document.getElementById("specificSentimentForm").style.display = "none";
+            } else if (document.getElementById("queryTypeSelector").value === "SUBJECT") {
+                document.getElementById("specificPersonForm").style.display = "none";
+                document.getElementById("specificRoleForm").style.display = "none";
+                document.getElementById("specificEventForm").style.display = "none";
+                document.getElementById("specificSubjectForm").style.display = "block";
+                document.getElementById("specificSentimentForm").style.display = "none";
+            } else if (document.getElementById("queryTypeSelector").value === "SENTIMENT") {
+                document.getElementById("specificPersonForm").style.display = "none";
+                document.getElementById("specificRoleForm").style.display = "none";
+                document.getElementById("specificEventForm").style.display = "none";
+                document.getElementById("specificSubjectForm").style.display = "none";
+                document.getElementById("specificSentimentForm").style.display = "block";
+            } else {
+                document.getElementById("specificPersonForm").style.display = "none";
+                document.getElementById("specificRoleForm").style.display = "none";
+                document.getElementById("specificEventForm").style.display = "none";
+                document.getElementById("specificSubjectForm").style.display = "none";
+                document.getElementById("specificSentimentForm").style.display = "none";
+            }
+        }
+
+        function beforeSubmit() {
+            document.getElementById("specificPersonForm").queryType.value = document.getElementById("queryTypeSelector").value;
+            document.getElementById("specificRoleForm").queryType.value = document.getElementById("queryTypeSelector").value;
+            document.getElementById("specificEventForm").queryType.value = document.getElementById("queryTypeSelector").value;
+            document.getElementById("specificSubjectForm").queryType.value = document.getElementById("queryTypeSelector").value;
+            document.getElementById("specificSentimentForm").queryType.value = document.getElementById("queryTypeSelector").value;
+        }
+
+        function lookupPersonByName() {
+            document.getElementById("nameOptions").innerHTML = "<div class=\"loader\"></div>";
+
+            var xhttp = new XMLHttpRequest();
+            var params = "lookupType=PERSON&name=" + document.getElementById("name").value;
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var jsonArray = JSON.parse(this.responseText);
+                    var str = "";
+                    var i = 0;
+                    for (var i = 0; i < jsonArray.length; i++) {
+                        str += "<input type=\"radio\" id=\"personResourceName\" name=\"personResourceName\" value=\"" + jsonArray[i]['resourceName'] + "\">" + jsonArray[i]['label'] + " (" + jsonArray[i]['count'] + ") </input><br />";
+                    }
+                    document.getElementById("nameOptions").innerHTML = str;
+                }
+            };
+            xhttp.open("GET", "Lookup?" + params, true);
+            xhttp.send();
+        }
+
+        function lookupCountryByName() {
+            document.getElementById("nameOptions").innerHTML = "<div class=\"loader\"></div>";
+
+            var xhttp = new XMLHttpRequest();
+            var countryName = "";
+            if (document.getElementById("queryTypeSelector").value === "ROLE") {
+                countryName = document.getElementById("specificRoleForm").querySelector("#countryName").value;
+                document.getElementById("specificRoleForm").querySelector("#countryOptions").innerHTML = "<div class=\"loader\"></div>";
+            } else if (document.getElementById("queryTypeSelector").value === "SUBJECT") {
+                countryName = document.getElementById("specificSubjectForm").querySelector("#countryName").value;
+                document.getElementById("specificSubjectForm").querySelector("#countryOptions").innerHTML = "<div class=\"loader\"></div>";
+            }
+            var params = "lookupType=COUNTRY&countryName=" + countryName;
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var jsonArray = JSON.parse(this.responseText);
+                    var str = "";
+                    var i = 0;
+                    for (var i = 0; i < jsonArray.length; i++) {
+                        str += "<input type=\"radio\" id=\"countryResourceName\" name=\"countryResourceName\" value=\"" + jsonArray[i]['resourceName'] + "\">" + jsonArray[i]['label'] + " (" + jsonArray[i]['count'] + ") </input><br />";
+                    }
+                    if (document.getElementById("queryTypeSelector").value === "ROLE") {
+                        document.getElementById("specificRoleForm").querySelector("#countryOptions").innerHTML = str;
+                    } else if (document.getElementById("queryTypeSelector").value === "SUBJECT") {
+                        document.getElementById("specificSubjectForm").querySelector("#countryOptions").innerHTML = str;
+                    }
+                }
+            };
+            xhttp.open("GET", "Lookup?" + params, true);
+            xhttp.send();
+        }
+
+        function lookupRoleByName() {
+            document.getElementById("roleOptions").innerHTML = "<div class=\"loader\"></div>";
+
+            var xhttp = new XMLHttpRequest();
+            var params = "lookupType=ROLE&roleName=" + document.getElementById("roleName").value;
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var jsonArray = JSON.parse(this.responseText);
+                    var str = "";
+                    var i = 0;
+                    for (var i = 0; i < jsonArray.length; i++) {
+                        str += "<input type=\"radio\" id=\"roleResourceName\" name=\"roleResourceName\" value=\"" + jsonArray[i]['resourceName'] + "\">" + jsonArray[i]['resourceName'] + " (" + jsonArray[i]['count'] + ") </input><br />";
+                    }
+                    document.getElementById("roleOptions").innerHTML = str;
+                }
+            };
+            xhttp.open("GET", "Lookup?" + params, true);
+            xhttp.send();
+        }
+
+        function lookupSubjectByName() {
+            document.getElementById("subjectOptions").innerHTML = "<div class=\"loader\"></div>";
+
+            var xhttp = new XMLHttpRequest();
+            var params = "lookupType=SUBJECT&subjectName=" + document.getElementById("subjectName").value;
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var jsonArray = JSON.parse(this.responseText);
+                    var str = "";
+                    var i = 0;
+                    for (var i = 0; i < jsonArray.length; i++) {
+                        str += "<input type=\"radio\" id=\"subjectResourceName\" name=\"subjectResourceName\" value=\"" + jsonArray[i]['resourceName'] + "\">" + jsonArray[i]['resourceName'] + " (" + jsonArray[i]['count'] + ") </input><br />";
+                    }
+                    document.getElementById("subjectOptions").innerHTML = str;
+                }
+            };
+            xhttp.open("GET", "Lookup?" + params, true);
+            xhttp.send();
+        }
+    </script>
+</head>
+<body>
+    <h1>Select parameters to execute the query</h1>
+    <select id="queryTypeSelector" name="queryTypeSelector" onchange="onQueryTypeChange()">
+        <option value="" selected>Pick an option</option>
+        <option value="PERSON">By Specific Person</option>
+        <option value="EVENT">By Predicate Pattern</option>
+        <option value="ROLE">By Specific Resource Type and Country of Birth</option>
+        <option value="SUBJECT">By Specific Associated Subject</option>
+        <option value="SENTIMENT">By Sentiment Range</option>
+    </select>
+    <div>
+    <form method="post" action="Query" id="specificPersonForm" style="display:none" onsubmit="beforeSubmit()">
+        <h2>Specify the person you want to get events about</h2>
+        <input id="queryType" name="queryType" type="hidden" />
+        <table>
+            <tr>
+                <td><label for="name">Name: </label></td>
+                <td><input type="input" id="name" name="name" /></td>
+                <td><input type="button" value="Lookup" onclick="lookupPersonByName()"></td>
+            </tr>
+            <tr>
+                <td colspan="4"><div id="nameOptions"></div></td>
+            </tr>
+            <tr>
+                <td><label for="temporalFilter">Only those with temporal info: </label></td>
+                <td><input type="checkbox" id="temporalFilter" name="temporalFilter" /></td>
+            </tr>
+            <tr>
+                <td><label for="startDate">Start: </label></td>
+                <td><input type="date" id="startDate" name="startDate" /></td>
+                <td><label for="endDate">End: </label></td>
+                <td><input type="date" id="endDate" name="endDate" /></td>
+            </tr>
+        </table>
+        <input type="submit">
+    </form>
+    <form method="post" action="Query" id="specificEventForm" style="display:none" onsubmit="beforeSubmit()"> 
+        <h2>Specify the kind of predicate you want to get events about</h2>
+        <input id="queryType" name="queryType" type="hidden" />
+        <table>
+            <tr>
+                <td><label for="event">Predicate: </label></td>
+                <td><input type="input" id="event" name="event"/></td>
+            </tr>
+            <tr>
+                <td><label for="temporalFilter">Only those with temporal info: </label></td>
+                <td><input type="checkbox" id="temporalFilter" name="temporalFilter" /></td>
+            </tr>
+            <tr>
+                <td><label for="startDate">Start: </label></td>
+                <td><input type="date" id="startDate" name="startDate" /></td>
+                <td><label for="endDate">End: </label></td>
+                <td><input type="date" id="endDate" name="endDate" /></td>
+            </tr>
+        </table>
+        <input type="submit">
+    </form>
+    <form method="post" action="Query" id="specificRoleForm" style="display:none" onsubmit="beforeSubmit()">
+        <h2>Specify the role (Yago) of the person you want to get events about</h2>
+        <input id="queryType" name="queryType" type="hidden" />
+        <table>
+            <tr>
+                <td><label for="countryName">Country: </label></td>
+                <td><input type="input" id="countryName" name="countryName" /></td>
+                <td><input type="button" value="Lookup" onclick="lookupCountryByName()"></td>
+            </tr>
+            <tr>
+                <td colspan="4"><div id="countryOptions" name="countryOptions"></div></td>
+            </tr>
+            <tr>
+                <td><label for="roleName">Role: </label></td>
+                <td><input type="input" id="roleName" name="roleName" /></td>
+                <td><input type="button" value="Lookup" onclick="lookupRoleByName()"></td>
+            </tr>
+            <tr>
+                <td colspan="4"><div id="roleOptions"></div></td>
+            </tr>
+            <tr>
+                <td><label for="temporalFilter">Only those with temporal info: </label></td>
+                <td><input type="checkbox" id="temporalFilter" name="temporalFilter" /></td>
+            </tr>
+            <tr>
+                <td><label for="startDate">Start: </label></td>
+                <td><input type="date" id="startDate" name="startDate" /></td>
+                <td><label for="endDate">End: </label></td>
+                <td><input type="date" id="endDate" name="endDate" /></td>
+            </tr>
+        </table>
+        <input type="submit">
+    </form>
+    <form method="post" action="Query" id="specificSubjectForm" style="display:none" onsubmit="beforeSubmit()">
+        <h2>Specify the subject associated to the person you want to get events about</h2>
+        <input id="queryType" name="queryType" type="hidden" />
+        <table>
+            <tr>
+                <td><label for="subjectName">Subject: </label></td>
+                <td><input type="input" id="subjectName" name="subjectName" /></td>
+                <td><input type="button" value="Lookup" onclick="lookupSubjectByName()"></td>
+            </tr>
+            <tr>
+                <td colspan="4"><div id="subjectOptions"></div></td>
+            </tr>
+            <tr>
+                <td><label for="temporalFilter">Only those with temporal info: </label></td>
+                <td><input type="checkbox" id="temporalFilter" name="temporalFilter" /></td>
+            </tr>
+            <tr>
+                <td><label for="startDate">Start: </label></td>
+                <td><input type="date" id="startDate" name="startDate" /></td>
+                <td><label for="endDate">End: </label></td>
+                <td><input type="date" id="endDate" name="endDate" /></td>
+            </tr>
+        </table>
+        <input type="submit">
+    </form>
+    <form method="post" action="Query" id="specificSentimentForm" style="display:none" onsubmit="beforeSubmit()">
+        <h2>Specify the person you want to get events about</h2>
+        <input id="queryType" name="queryType" type="hidden" />
+        <table>
+            <tr>
+                <td><label for="sentimentTheshold">Threshold: </label></td>
+                <td><input type="input" id="sentimentTheshold" name="sentimentTheshold" /></td>
+            </tr>
+            <tr>
+                <td><label for="sentimentOperator">Operator: </label></td>
+                <td>
+                    <select type="select" id="sentimentOperator" name="sentimentOperator">
+                        <option value="GREATEREQUALS">>=</option>
+                        <option value="LESSEQUALS"><=</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td><label for="temporalFilter">Only those with temporal info: </label></td>
+                <td><input type="checkbox" id="temporalFilter" name="temporalFilter" /></td>
+            </tr>
+            <tr>
+                <td><label for="startDate">Start: </label></td>
+                <td><input type="date" id="startDate" name="startDate" /></td>
+                <td><label for="endDate">End: </label></td>
+                <td><input type="date" id="endDate" name="endDate" /></td>
+            </tr>
+        </table>
+        <input type="submit">
+    </form>
+    </div>
+</body>
+</html>

@@ -5,14 +5,14 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.newstextanalyzer.pipeline.IPipeline;
+import org.newstextanalyzer.pipeline.IPipelineManager;
 import org.newstextanalyzer.pipeline.IPipelineStep.StepType;
 
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 
-public class ResignREBoot implements IPipeline {
+public class ResignREBoot implements IPipelineManager {
 
   private StanfordCoreNLP pipeline;
 

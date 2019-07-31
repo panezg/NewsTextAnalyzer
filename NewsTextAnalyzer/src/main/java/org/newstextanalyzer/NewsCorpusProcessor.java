@@ -5,13 +5,14 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.newstextanalyzer.pipeline.IPipeline;
+import org.newstextanalyzer.pipeline.IPipelineManager;
 import org.newstextanalyzer.pipeline.IPipelineStep.StepType;
 import org.newstextanalyzer.virtuoso.VirtuosoClient;
 
 
 public class NewsCorpusProcessor {
-  protected Map<StepType, Object> processThroughPipeline(IPipeline pipeline, String corpusPath, String[] years) {
+  
+  protected Map<StepType, Object> processThroughPipeline(IPipelineManager pipeline, String corpusPath, String[] years) {
     try {
       File dir = new File(corpusPath);
       if (dir.exists() && dir.isDirectory()) {
@@ -26,10 +27,6 @@ public class NewsCorpusProcessor {
               File[] newsArticleFiles = subDir.listFiles();
               for (File newsArticleFile : newsArticleFiles) {
                 NewsArticle newsArticle = new TheGuardianNewsArticle(newsArticleFile);
-                // p.run(newsArticle.getTitle() + ".\n" + newsArticle.getBody().toString());
-                // pipeline.run(newsArticle.getTitle() + ".\n" +
-                // newsArticle.getBody().toString());
-                // pipeline.run(newsArticle.getTitle() + ".\n");
                 pipeline.run(newsArticle);
               }
             }
@@ -40,7 +37,9 @@ public class NewsCorpusProcessor {
       Map<StepType, Object> sink = pipeline.finish();
       if (sink.containsKey(StepType.INTERLINKER)) {
         VirtuosoClient vc = VirtuosoClient.getInstance();
-        //vc.updateInterlinks((Map<String, String>) sink.get(StepType.INTERLINKER));        
+        @SuppressWarnings("unchecked")
+        Map<String, String> map = (Map<String, String>) sink.get(StepType.INTERLINKER);
+        vc.updateInterlinks(map);
       }
     } catch (IOException ioe) {
       ioe.printStackTrace();

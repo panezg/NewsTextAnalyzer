@@ -19,7 +19,7 @@ public class VirtuosoPersistor implements IPipelineStep {
     List<TripleWrapper> triplesWrapper = (List<TripleWrapper>) extra[0];
     for (TripleWrapper tripleWrapper : triplesWrapper) {
       // TODO: Find better location
-      if (tripleWrapper.getScore() < ReVerbWrapper.CONFIDENCE_THRESHOLD) {
+      if (tripleWrapper.getScore() < ReVerbOIE.CONFIDENCE_THRESHOLD) {
         continue;
       }
       vc.saveTriple(tripleWrapper);

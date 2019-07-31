@@ -79,7 +79,7 @@ public class IRAnalysis {
       config.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
       IndexWriter iwriter = new IndexWriter(directory, config);
 
-      File dir = new File(App.TGN_DIRECTORY_PATH);
+      File dir = new File(Const.TGN_DIRECTORY_PATH);
       if (dir.exists() && dir.isDirectory()) {
         File[] subDirs = dir.listFiles();
         for (File subDir : subDirs) {
